@@ -1,3 +1,5 @@
+import { apiUrl } from "./apiBase";
+
 // Simple in-memory cache for API calls
 interface CacheEntry<T> {
   data: T;
@@ -78,7 +80,7 @@ export const apiCache = new APICache();
  */
 export async function fetchMetricsWithCache() {
   return apiCache.get('metrics', async () => {
-    const res = await fetch('http://localhost:8000/metrics');
+    const res = await fetch(apiUrl('/api/metrics'));
     if (!res.ok) throw new Error('Failed to fetch metrics');
     return res.json();
   });
@@ -89,41 +91,21 @@ export async function fetchMetricsWithCache() {
  */
 export async function fetchToolsWithCache() {
   return apiCache.get('tools', async () => {
-    const res = await fetch('http://localhost:8000/tools');
+    const res = await fetch(apiUrl('/api/tools'));
     if (!res.ok) throw new Error('Failed to fetch tools');
     return res.json();
   });
 }
 
 /**
- * Get API URL based on environment
- */
-function getAPIUrl() {
-  if (typeof window === 'undefined') {
-    return 'http://localhost:8000';
-  }
-  // On localhost/127.0.0.1, use local backend
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:8000';
-  }
-  // On deployed URL, try to use relative path (same origin)
-  return '';
-}
-
-/**
  * Execute query (not cached, always fresh)
  */
 export async function executeQuery(question: string) {
-  const apiUrl = getAPIUrl();
-  if (!apiUrl) {
-    throw new Error('Backend API not configured for this environment');
-  }
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout for queries
 
   try {
-    const res = await fetch(`${apiUrl}/query`, {
+    const res = await fetch(apiUrl('/api/query'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question }),

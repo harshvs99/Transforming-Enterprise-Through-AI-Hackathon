@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+import json
 from ..services.metric_resolver import ResolvedMetrics
+from ..services import llm
 
 class ToolCall(BaseModel):
     tool: str
@@ -18,7 +20,6 @@ class PlanCompiler:
         # Rule 2: Never do analytical reasoning here. Only chain tools.
 
         if playbook_id == "metric_anomaly_diagnosis":
-            # Deterministic chain for anomaly diagnosis
             steps.append(ToolCall(tool="decompose_seasonality", params={"data": [10, 11, 12, 11, 10, 25, 22], "period": 7}))
             steps.append(ToolCall(tool="detect_anomaly_zscore", params={"data": [10, 11, 12, 11, 10, 25, 22], "threshold": 2.0}))
             steps.append(ToolCall(tool="find_historical_analog", params={
@@ -32,32 +33,49 @@ class PlanCompiler:
                 "sample2": [8, 9, 10, 9, 8]
             }))
         else:
-            # Tier 1 fallback
             steps.append(ToolCall(tool="detect_anomaly_zscore", params={"data": [10, 11, 12, 13]}))
 
         return ExecutionPlan(steps=steps)
 
+
+def _heuristic_answer(question: str, tool_results: List[Any]) -> str:
+    has_anomaly = False
+    top_analog = "unknown"
+    similarity = 0.0
+    for res in tool_results:
+        if res.tool_name == "detect_anomaly_zscore" and any(res.output.get("anomalies", [])):
+            has_anomaly = True
+        if res.tool_name == "find_historical_analog":
+            top_analog = res.output.get("top_analog_period") or top_analog
+            similarity = res.output.get("similarity_score", 0) or 0.0
+    if "why" in question.lower():
+        if has_anomaly:
+            return (f"Diagnosis: A significant anomaly was detected. The data pattern matches "
+                    f"{top_analog} (Similarity: {similarity:.2f}), suggesting the current variance "
+                    f"is consistent with historical seasonal fatigue.")
+        return ("The statistical analysis confirms that while there is variance, it does not cross "
+                "the threshold of a significant anomaly relative to historical trends.")
+    return "Analysis complete. See the audit trail for detailed tool outputs and metric resolutions."
+
+
 class Decompiler:
     async def decompile(self, question: str, tool_results: List[Any]) -> str:
-        # Rule: Never add information not in the result.
-        # Synthesize the answer from the tool outputs.
-
-        has_anomaly = False
-        top_analog = "unknown"
-        similarity = 0
-
-        for res in tool_results:
-            if res.tool_name == "detect_anomaly_zscore":
-                if any(res.output.get("anomalies", [])):
-                    has_anomaly = True
-            if res.tool_name == "find_historical_analog":
-                top_analog = res.output.get("top_analog_period")
-                similarity = res.output.get("similarity_score", 0)
-
-        if "why" in question.lower():
-            if has_anomaly:
-                return f"Diagnosis: A significant anomaly was detected. The data pattern matches {top_analog} (Similarity: {similarity:.2f}), suggesting the current variance is consistent with historical seasonal fatigue."
-            else:
-                return "The statistical analysis confirms that while there is variance, it does not cross the threshold of a significant anomaly relative to historical trends."
-
-        return "Analysis complete. See the audit trail for detailed tool outputs and metric resolutions."
+        # Rule: Never add information not in the tool result. Gemini is given ONLY
+        # the structured tool outputs and is instructed not to invent facts.
+        if llm.is_enabled():
+            tool_payload = [
+                {"tool": r.tool_name, "inputs": r.inputs, "output": r.output}
+                for r in tool_results
+            ]
+            prompt = (
+                "You are the Decompiler in a deterministic analytics kernel. Synthesize a concise, "
+                "executive-friendly answer using ONLY the tool outputs below. Do not invent numbers, "
+                "causes, or entities. If the outputs are insufficient, say so.\n\n"
+                f"Question: {question}\n\n"
+                f"Tool outputs (JSON):\n{json.dumps(tool_payload, default=str)}\n\n"
+                "Respond in 2-4 sentences."
+            )
+            text = llm.generate(prompt)
+            if text:
+                return text
+        return _heuristic_answer(question, tool_results)

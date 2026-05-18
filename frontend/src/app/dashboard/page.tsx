@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { apiUrl } from "@/lib/apiBase";
 
 // Stage bar colors: Prospects=yellow, Leads=cyan, MQL=red, SAL=yellow, Opportunity=cyan, Closed-Won=black
 const STAGE_COLORS = ["#FFCC00", "#06B6D4", "#e63b2e", "#FFCC00", "#06B6D4", "#1a1a1a"];
@@ -105,7 +106,7 @@ export default function DashboardPage() {
 
   const fetchFunnel = useCallback(() => {
     setLoading(true);
-    fetch(`http://localhost:8000/funnel?time_range=${timeRange}`)
+    fetch(apiUrl(`/api/funnel?time_range=${timeRange}`))
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -130,7 +131,7 @@ export default function DashboardPage() {
   // SSE live updates
   useEffect(() => {
     if (typeof EventSource === "undefined") return;
-    const es = new EventSource("http://localhost:8000/funnel/stream");
+    const es = new EventSource(apiUrl("/api/funnel/stream"));
     es.onmessage = (e) => {
       try {
         const delta: Record<string, number> = JSON.parse(e.data);

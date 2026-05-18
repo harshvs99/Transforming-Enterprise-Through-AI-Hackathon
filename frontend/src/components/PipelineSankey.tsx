@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function PipelineSankey() {
   const [metrics, setMetrics] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/metrics")
+    fetch(apiUrl("/api/metrics"))
       .then(res => res.json())
       .then(data => {
         // Sort and map for visualization

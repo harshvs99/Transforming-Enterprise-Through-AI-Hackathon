@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { apiUrl } from './apiBase';
 
 interface UseAPIState<T> {
   data: T;
@@ -10,20 +11,8 @@ interface UseAPIState<T> {
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Use environment variable or detect based on current URL
-const getAPIUrl = () => {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-  // On localhost/127.0.0.1, use local backend
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:8000';
-  }
-  // On deployed URL, try to use relative path (same origin)
-  return '';
-};
-
-const API_URL = getAPIUrl();
+// Use relative path for API calls (works in Docker and local)
+const API_URL = '';
 
 /**
  * Hook for fetching metrics with caching
@@ -54,23 +43,11 @@ export function useMetrics(): UseAPIState<any[]> {
           return;
         }
 
-        // Skip if API URL is not available (deployed without backend)
-        if (!API_URL) {
-          if (mounted) {
-            setState({
-              data: [],
-              loading: false,
-              error: new Error('Backend API not configured for this environment'),
-            });
-          }
-          return;
-        }
-
         console.log('Fetching metrics from API...');
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-        const response = await fetch(`${API_URL}/metrics`, {
+        const response = await fetch(apiUrl('/api/metrics'), {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
@@ -145,23 +122,11 @@ export function useTools(): UseAPIState<any[]> {
           return;
         }
 
-        // Skip if API URL is not available (deployed without backend)
-        if (!API_URL) {
-          if (mounted) {
-            setState({
-              data: [],
-              loading: false,
-              error: new Error('Backend API not configured for this environment'),
-            });
-          }
-          return;
-        }
-
         console.log('Fetching tools from API...');
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-        const response = await fetch(`${API_URL}/tools`, {
+        const response = await fetch(apiUrl('/api/tools'), {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
