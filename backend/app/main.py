@@ -9,21 +9,35 @@ from .compiler.investigation import InvestigationMode
 from .tools import registry
 from .seed_metrics import seed_metrics
 from .generate_data import generate_data
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Thinking Machines API")
 
-# Enable CORS
+# Enable CORS - Restricting wildcard with credentials for security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://thinking-machines.vercel.app", "http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+# Add Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 @app.on_event("startup")
 def on_startup():
@@ -39,7 +53,7 @@ def on_startup():
     db.close()
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., max_length=1000)
 
 @app.post("/query")
 async def process_query(request: QueryRequest, db: Session = Depends(database.get_db)):
