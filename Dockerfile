@@ -35,7 +35,7 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 RUN mkdir -p /app && touch /app/thinking_machines.db
 
 # Expose ports
-EXPOSE 80
+EXPOSE 8080
 
 # Copy entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
