@@ -5,7 +5,7 @@ import AuditDrawer from "@/components/AuditDrawer";
 import ToolRegistry from "@/components/ToolRegistry";
 import PipelineSankey from "@/components/PipelineSankey";
 import { QueryResponse, ToolMetadata } from "@/components/api";
-import { Search, Send, Database, BarChart3, MessageSquare, Lightbulb, AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
+import { Search, Send, Database, BarChart3, MessageSquare, Lightbulb, AlertTriangle, ShieldCheck, HelpCircle, Info } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"ask" | "registry" | "pipeline">("ask");
@@ -49,22 +49,34 @@ export default function Home() {
           <div className="w-8 h-8 bg-cyan-500 rounded flex items-center justify-center font-bold text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]">TM</div>
           <span className="font-bold text-xl tracking-tight text-white">Thinking Machines</span>
         </div>
-        <div className="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+        <div className="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800" role="tablist" aria-label="Workspace tabs">
           <button
+            id="tab-ask"
+            role="tab"
+            aria-selected={activeTab === "ask"}
+            aria-controls="panel-ask"
             onClick={() => setActiveTab("ask")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all ${activeTab === "ask" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"}`}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none ${activeTab === "ask" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"}`}
           >
             <MessageSquare size={16} /> Ask
           </button>
           <button
+             id="tab-pipeline"
+             role="tab"
+             aria-selected={activeTab === "pipeline"}
+             aria-controls="panel-pipeline"
              onClick={() => setActiveTab("pipeline")}
-             className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all ${activeTab === "pipeline" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"}`}
+             className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none ${activeTab === "pipeline" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"}`}
           >
             <BarChart3 size={16} /> Pipeline
           </button>
           <button
+             id="tab-registry"
+             role="tab"
+             aria-selected={activeTab === "registry"}
+             aria-controls="panel-registry"
              onClick={() => setActiveTab("registry")}
-             className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all ${activeTab === "registry" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"}`}
+             className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm transition-all focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none ${activeTab === "registry" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"}`}
           >
             <Database size={16} /> Registry
           </button>
@@ -80,21 +92,22 @@ export default function Home() {
       {/* Main Workspace */}
       <div className="flex-1 p-8 max-w-6xl mx-auto w-full">
         {activeTab === "ask" && (
-          <div className="flex flex-col gap-8 h-full">
+          <div id="panel-ask" role="tabpanel" aria-labelledby="tab-ask" className="flex flex-col gap-8 h-full">
             <div className="relative group">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Why did our CAC spike in October?"
-                className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 pl-16 text-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all placeholder:text-slate-600 shadow-2xl group-hover:border-slate-700"
+                className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 pl-16 text-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 transition-all placeholder:text-slate-600 shadow-2xl group-hover:border-slate-700"
                 onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
               />
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-cyan-500 transition-colors" size={28} />
               <button
                 onClick={handleAsk}
                 disabled={isLoading || !query}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white p-3 rounded-xl transition-all active:scale-95 shadow-lg"
+                aria-label="Send query"
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white p-3 rounded-xl transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none shadow-lg"
               >
                 <Send size={24} />
               </button>
@@ -204,11 +217,13 @@ export default function Home() {
         )}
 
         {activeTab === "registry" && (
-          <ToolRegistry tools={tools} />
+          <div id="panel-registry" role="tabpanel" aria-labelledby="tab-registry">
+            <ToolRegistry tools={tools} />
+          </div>
         )}
 
         {activeTab === "pipeline" && (
-          <div className="animate-in fade-in zoom-in-95 duration-500">
+          <div id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" className="animate-in fade-in zoom-in-95 duration-500">
             <PipelineSankey API_URL={API_URL} />
           </div>
         )}
