@@ -10,3 +10,4 @@ dist/
 server.log
 frontend_server.log
 .env
+stitch_thinking_machines_platform_build/

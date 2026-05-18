@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Sidebar from "@/components/Sidebar";
 
 export const metadata: Metadata = {
-  title: "Thinking Machines",
-  description: "B2B SaaS Marketing Intelligence Platform",
+  title: "Thinking Machines | Enterprise Analytics",
+  description: "AI-powered business intelligence platform",
 };
 
 export default function RootLayout({
@@ -13,7 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-background text-on-background font-body min-h-screen flex">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }

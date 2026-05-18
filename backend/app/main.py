@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Query as FastAPIQuery
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from . import models, database
@@ -12,6 +13,14 @@ from pydantic import BaseModel
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Thinking Machines API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class QueryRequest(BaseModel):
     question: str
