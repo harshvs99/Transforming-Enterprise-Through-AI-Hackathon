@@ -2,7 +2,7 @@ name: Deploy Frontend to Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["thinking-machines-final-handoff-4363196270167328046"]
 
   workflow_dispatch:
 
