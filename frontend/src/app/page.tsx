@@ -14,18 +14,20 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [tools, setTools] = useState<ToolMetadata[]>([]);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://thinking-machines-api.onrender.com";
+
   useEffect(() => {
-    fetch("http://localhost:8000/tools")
+    fetch(`${API_URL}/tools`)
       .then(res => res.json())
       .then(data => setTools(data))
       .catch(err => console.error("Failed to fetch tools", err));
-  }, []);
+  }, [API_URL]);
 
   const handleAsk = async () => {
     setIsLoading(true);
     setResponse(null);
     try {
-      const res = await fetch("http://localhost:8000/query", {
+      const res = await fetch(`${API_URL}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: query })
@@ -207,7 +209,7 @@ export default function Home() {
 
         {activeTab === "pipeline" && (
           <div className="animate-in fade-in zoom-in-95 duration-500">
-            <PipelineSankey />
+            <PipelineSankey API_URL={API_URL} />
           </div>
         )}
       </div>

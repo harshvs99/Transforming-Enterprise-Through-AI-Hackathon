@@ -7,6 +7,7 @@ from .segmentation import RFMAnalysis
 from .attribution import AttributionMarkovChain
 from .causal import CausalBayesianImpact
 from .forecasting import ForecastPipelineQuarterly
+from .scoring import ScoreLeadXGBoost
 
 registry.register(DetectAnomalyZScore())
 registry.register(FindHistoricalAnalog())
@@ -16,3 +17,4 @@ registry.register(RFMAnalysis())
 registry.register(AttributionMarkovChain())
 registry.register(CausalBayesianImpact())
 registry.register(ForecastPipelineQuarterly())
+registry.register(ScoreLeadXGBoost())

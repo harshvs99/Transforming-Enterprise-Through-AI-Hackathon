@@ -7,11 +7,36 @@ from .compiler.tier_classifier import TierClassifier
 from .compiler.compiler import PlanCompiler, Decompiler
 from .compiler.investigation import InvestigationMode
 from .tools import registry
+from .seed_metrics import seed_metrics
+from .generate_data import generate_data
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Thinking Machines API")
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+def on_startup():
+    db = database.SessionLocal()
+    # Seed metrics if none exist
+    if db.query(models.MetricDefinition).count() == 0:
+        seed_metrics()
+        print("Metrics seeded on startup.")
+    # Generate some data if none exist
+    if db.query(models.Entity).count() == 0:
+        generate_data()
+        print("Data generated on startup.")
+    db.close()
 
 class QueryRequest(BaseModel):
     question: str
@@ -66,7 +91,6 @@ async def process_query(request: QueryRequest, db: Session = Depends(database.ge
 
 @app.get("/tools")
 def list_tools():
-    # Return all registered tools with metadata
     return [registry.get_tool(name).metadata.dict() for name in registry._tools if "@" not in name]
 
 @app.get("/metrics")

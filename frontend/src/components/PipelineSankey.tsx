@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-export default function PipelineSankey() {
+export default function PipelineSankey({ API_URL }: { API_URL: string }) {
   const [metrics, setMetrics] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/metrics")
+    fetch(`${API_URL}/metrics`)
       .then(res => res.json())
       .then(data => {
-        // Sort and map for visualization
         const important = ["MQL", "SAL", "Opp", "CW"];
         const filtered = data
           .filter((m: any) => important.includes(m.display_name))
@@ -21,8 +20,9 @@ export default function PipelineSankey() {
            value: Math.floor(10000 / (i + 1) * (0.8 + 0.4 * Math.random())),
            color: ["bg-cyan-600", "bg-cyan-500", "bg-teal-500", "bg-emerald-500"][i]
         })));
-      });
-  }, []);
+      })
+      .catch(err => console.error("Failed to fetch metrics", err));
+  }, [API_URL]);
 
   const stages = metrics.length > 0 ? metrics : [
     { name: "MQLs", value: 4500, color: "bg-cyan-600" },
