@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+thinking_machines.db
+node_modules/
+.next/
+out/
+build/
+dist/
+server.log
+frontend_server.log
+.env
