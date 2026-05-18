@@ -96,14 +96,45 @@ export async function fetchToolsWithCache() {
 }
 
 /**
+ * Get API URL based on environment
+ */
+function getAPIUrl() {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:8000';
+  }
+  // On localhost/127.0.0.1, use local backend
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  // On deployed URL, try to use relative path (same origin)
+  return '';
+}
+
+/**
  * Execute query (not cached, always fresh)
  */
 export async function executeQuery(question: string) {
-  const res = await fetch('http://localhost:8000/query', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question }),
-  });
-  if (!res.ok) throw new Error('Failed to execute query');
-  return res.json();
+  const apiUrl = getAPIUrl();
+  if (!apiUrl) {
+    throw new Error('Backend API not configured for this environment');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout for queries
+
+  try {
+    const res = await fetch(`${apiUrl}/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) throw new Error('Failed to execute query');
+    return res.json();
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
 }
