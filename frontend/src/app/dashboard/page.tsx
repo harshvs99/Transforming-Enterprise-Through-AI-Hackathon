@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function DashboardPage() {
   const scrollToSection = (id: string) => {
     setTimeout(() => {
@@ -165,12 +167,12 @@ export default function DashboardPage() {
           <h2 className="font-headline font-black text-3xl uppercase tracking-tighter text-primary mb-3">Ready for New Synthesis?</h2>
           <p className="font-headline font-bold text-sm uppercase text-on-surface-variant mb-8 max-w-md mx-auto">Combine your ingested connectors with verified lab hypotheses to generate verifiable intelligence outputs.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-primary text-white border-4 border-primary px-8 py-4 font-headline font-black uppercase tracking-widest neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:translate-x-1 active:translate-y-1 active:shadow-none transition-all">
+            <Link href="/ask-anything" className="bg-primary text-white border-4 border-primary px-8 py-4 font-headline font-black uppercase tracking-widest neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:translate-x-1 active:translate-y-1 active:shadow-none transition-all inline-block text-center">
               Run New Synthesis
-            </button>
-            <button className="bg-white text-primary border-4 border-primary px-8 py-4 font-headline font-black uppercase tracking-widest neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:translate-x-1 active:translate-y-1 active:shadow-none transition-all">
+            </Link>
+            <Link href="/hypothesis-lab" className="bg-white text-primary border-4 border-primary px-8 py-4 font-headline font-black uppercase tracking-widest neo-shadow hover:translate-x-1 hover:translate-y-1 hover:shadow-none active:translate-x-1 active:translate-y-1 active:shadow-none transition-all inline-block text-center">
               Open Lab
-            </button>
+            </Link>
           </div>
         </section>
       </div>
