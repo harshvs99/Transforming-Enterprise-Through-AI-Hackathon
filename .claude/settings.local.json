@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(docker build *)",
+      "Bash(python *)",
+      "Bash(uvicorn backend.app.main:app --port 8765)",
+      "Bash(curl -s http://localhost:8765/health)",
+      "Bash(curl -s \"http://localhost:8765/funnel?time_range=30d\")",
+      "Bash(curl -s -X POST -H 'Content-Type: application/json' -d '{\"question\":\"Why did CAC spike in October?\"}' http://localhost:8765/query)",
+      "Bash(kill %1)",
+      "Bash(wait)",
+      "Bash(pkill -f \"uvicorn backend.app.main\")",
+      "Bash(curl -s -X POST -H 'Content-Type: application/json' -d '{\"question\":\"Why did CAC spike?\"}' http://localhost:8765/query)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git check-ignore *)",
+      "Bash(git commit -m 'Add Docker build config *)",
+      "Bash(git commit -m 'Run nginx on 8080 for Cloud Run; fix /api proxy prefix *)",
+      "Bash(git commit -m 'Start nginx before DB seed so Cloud Run port probe passes *)",
+      "Bash(gcloud run deploy transforming-enterprise-through-ai-hackathon *)",
+      "Bash(curl -s https://transforming-enterprise-through-ai-hackathon-228855873138.us-central1.run.app/)",
+      "Bash(curl -v https://transforming-enterprise-through-ai-hackathon-228855873138.us-central1.run.app/)",
+      "Bash(curl -s -w \"\\\\n%{http_code}\\\\n\" https://transforming-enterprise-through-ai-hackathon-228855873138.us-central1.run.app/)",
+      "Bash(curl -s https://transforming-enterprise-through-ai-hackathon-228855873138.us-central1.run.app/api/tools)",
+      "Bash(docker run *)",
+      "Bash(curl -s -w \"\\\\nStatus: %{http_code}\\\\n\" http://localhost:8080/api/tools)",
+      "Bash(curl -s http://localhost:8080/api/health)",
+      "Bash(curl -s -X POST http://localhost:8080/api/query -H 'Content-Type: application/json' -d '{\"question\":\"Why did our CAC spike in October?\"}')",
+      "Bash(docker stop *)",
+      "Bash(docker rm *)"
+    ]
+  }
+}
