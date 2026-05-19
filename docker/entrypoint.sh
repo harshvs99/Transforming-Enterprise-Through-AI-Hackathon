@@ -9,8 +9,11 @@ echo "Starting Thinking Machines application..."
 echo "Starting Nginx on 8080..."
 nginx -g "daemon off;" &
 
-# Initialize database (idempotent; safe to skip on failure)
+# Create database tables before seed/generate scripts
 cd /app
+python -c "from backend.app import database, models; models.Base.metadata.create_all(bind=database.engine)" || true
+
+# Initialize database (idempotent; safe to skip on failure)
 python -m backend.app.seed_metrics || true
 python -m backend.app.generate_data || true
 
