@@ -42,8 +42,13 @@ COPY docker/nginx.conf.tpl /etc/nginx/nginx.conf.tpl
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Database file
-RUN mkdir -p /app && touch /app/thinking_machines.db
+# Pre-bake the database at build time so cold-start skips all init work.
+# The entrypoint checks for the metric_definitions table and .data_generated
+# flag — both will be present in the image, so startup is near-instant.
+RUN python -c "from backend.app import database, models; models.Base.metadata.create_all(bind=database.engine)" \
+ && python -m backend.app.seed_metrics \
+ && python -m backend.app.generate_data \
+ && touch /app/.data_generated
 
 EXPOSE 8080
 
