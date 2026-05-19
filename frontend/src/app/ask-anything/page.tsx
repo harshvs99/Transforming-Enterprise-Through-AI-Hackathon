@@ -6,6 +6,7 @@ import { executeQuery } from "@/lib/apiCache";
 export default function AskAnythingPage() {
   const [query, setQuery] = useState("");
   const [response, setResponse] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -14,11 +15,13 @@ export default function AskAnythingPage() {
     if (!q.trim()) return;
     setLoading(true);
     setResponse(null);
+    setError(null);
     try {
       const data = await executeQuery(q);
       setResponse(data);
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to reach the backend. Is it running on port 8000?");
     } finally {
       setLoading(false);
     }
@@ -115,6 +118,13 @@ export default function AskAnythingPage() {
                 <p className="font-headline font-bold uppercase text-primary">Executing Deterministic Kernel...</p>
                 <p className="font-mono text-xs text-on-surface-variant mt-2">Compiling execution plan...</p>
               </div>
+            </section>
+          )}
+
+          {error && !loading && (
+            <section className="border-4 border-red-500 p-6 bg-red-50 neo-shadow">
+              <p className="font-headline font-bold uppercase text-xs text-red-600 mb-2">Error</p>
+              <p className="font-mono text-sm text-red-700">{error}</p>
             </section>
           )}
 

@@ -21,7 +21,7 @@ class PlanCompiler:
 
         if playbook_id == "metric_anomaly_diagnosis":
             steps.append(ToolCall(tool="decompose_seasonality", params={"data": [10, 11, 12, 11, 10, 25, 22], "period": 7}))
-            steps.append(ToolCall(tool="detect_anomaly_zscore", params={"data": [10, 11, 12, 11, 10, 25, 22], "threshold": 2.0}))
+            steps.append(ToolCall(tool="detect_anomaly_zscore", params={"data": [10, 11, 12, 11, 10, 25, 22], "threshold": 1.5}))
             steps.append(ToolCall(tool="find_historical_analog", params={
                 "current_vector": [25, 22],
                 "historical_vectors": [[10, 12], [20, 21], [15, 14]],
