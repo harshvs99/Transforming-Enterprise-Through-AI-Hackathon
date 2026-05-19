@@ -10,15 +10,12 @@ export default function AskAnythingPage() {
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleQuery = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!query.trim() || loading) return;
-
+  const runQuery = async (q: string) => {
+    if (!q.trim()) return;
     setLoading(true);
     setResponse(null);
-
     try {
-      const data = await executeQuery(query);
+      const data = await executeQuery(q);
       setResponse(data);
     } catch (err) {
       console.error(err);
@@ -26,6 +23,25 @@ export default function AskAnythingPage() {
       setLoading(false);
     }
   };
+
+  const handleQuery = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (loading) return;
+    await runQuery(query);
+  };
+
+  // Read ?q=... from the URL on mount and auto-submit it. Using
+  // window.location instead of useSearchParams keeps this compatible
+  // with `output: 'export'` (no Suspense boundary needed).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      setQuery(q);
+      runQuery(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-expand textarea
   useEffect(() => {
