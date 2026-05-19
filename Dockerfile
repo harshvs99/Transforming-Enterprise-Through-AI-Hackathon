@@ -1,44 +1,48 @@
-# Stage 1: Build frontend
+# Stage 1: Build frontend (produces a Node server via output: 'standalone')
 FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
-# Copy frontend files
 COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend .
 RUN npm run build
 
-# Stage 2: Python backend with frontend
+# Stage 2: Runtime — Python + Node + nginx in one container
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Nginx for serving static frontend and proxying API
-RUN apt-get update && apt-get install -y nginx curl && rm -rf /var/lib/apt/lists/*
+# Install system dependencies and Node.js early (before Python deps)
+# so layer caching works: changes to requirements.txt don't invalidate Node
+RUN apt-get update \
+ && apt-get install -y nginx curl ca-certificates gnupg \
+ && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+ && apt-get install -y nodejs \
+ && rm -rf /var/lib/apt/lists/*
 
-# Copy Python requirements and install
+# Python deps (comes after Node so Node layer can cache)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
+# Backend code
 COPY backend ./backend
 
-# Copy built frontend from stage 1
-COPY --from=frontend-builder /app/frontend/out /var/www/html
+# Next.js standalone server + its static assets and public/ folder.
+# The standalone output bundles only the deps the server needs.
+COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend
+COPY --from=frontend-builder /app/frontend/.next/static    /app/frontend/.next/static
+COPY --from=frontend-builder /app/frontend/public          /app/frontend/public
 
-# Copy Nginx configuration
+# Nginx config and entrypoint
 COPY docker/nginx.conf /etc/nginx/nginx.conf
-
-# Create database file
-RUN mkdir -p /app && touch /app/thinking_machines.db
-
-# Expose ports
-EXPOSE 8080
-
-# Copy entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# Database file
+RUN mkdir -p /app && touch /app/thinking_machines.db
+
+EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
