@@ -121,6 +121,77 @@ export async function executeQuery(question: string) {
   }
 }
 
+/** List all connectors with status */
+export async function fetchConnectors() {
+  const res = await fetch(apiUrl('/api/connectors'));
+  if (!res.ok) throw new Error('Failed to fetch connectors');
+  return res.json();
+}
+
+/** Save connector configuration */
+export async function configureConnector(connectorId: string, config: Record<string, string>) {
+  const res = await fetch(apiUrl(`/api/connectors/${connectorId}/configure`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config }),
+  });
+  if (!res.ok) throw new Error('Failed to save connector config');
+  return res.json();
+}
+
+/** Test a connector connection */
+export async function testConnector(connectorId: string) {
+  const res = await fetch(apiUrl(`/api/connectors/${connectorId}/test`), { method: 'POST' });
+  if (!res.ok) throw new Error('Connection test failed');
+  return res.json();
+}
+
+/** Sync data from a connector */
+export async function syncConnector(connectorId: string) {
+  const res = await fetch(apiUrl(`/api/connectors/${connectorId}/sync`), { method: 'POST' });
+  if (!res.ok) throw new Error('Sync failed');
+  return res.json();
+}
+
+/** Get simulated data from a connector */
+export async function fetchConnectorData(connectorId: string) {
+  const res = await fetch(apiUrl(`/api/connectors/${connectorId}/data`));
+  if (!res.ok) throw new Error('Failed to fetch connector data');
+  return res.json();
+}
+
+/** Fetch audit log events */
+export async function fetchAuditLog(limit = 50) {
+  const res = await fetch(apiUrl(`/api/audit?limit=${limit}`));
+  if (!res.ok) throw new Error('Failed to fetch audit log');
+  return res.json();
+}
+
+/** Run the initialize checklist */
+export async function runInitialize() {
+  const res = await fetch(apiUrl('/api/initialize/run'), { method: 'POST' });
+  if (!res.ok) throw new Error('Initialize failed');
+  return res.json();
+}
+
+/** Fetch pipeline/tool status */
+export async function fetchPipelineStatus() {
+  return apiCache.get('pipeline_status', async () => {
+    const res = await fetch(apiUrl('/api/pipeline/status'));
+    if (!res.ok) throw new Error('Failed to fetch pipeline status');
+    return res.json();
+  }, 60_000);
+}
+
+/** Fetch funnel data */
+export async function fetchFunnel(timeRange = '30d') {
+  return apiCache.get(`funnel_${timeRange}`, async () => {
+    const res = await fetch(apiUrl(`/api/funnel?time_range=${timeRange}`));
+    if (!res.ok) throw new Error('Failed to fetch funnel data');
+    return res.json();
+  }, 120_000);
+}
+
 /**
  * Drill into a specific investigation hypothesis using live DB data
  */
