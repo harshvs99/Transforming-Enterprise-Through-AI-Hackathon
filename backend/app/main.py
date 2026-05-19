@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query as FastAPIQuery
+from fastapi import FastAPI, Depends, HTTPException, Query as FastAPIQuery, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -11,17 +11,34 @@ from .services import llm
 from .compiler.tier_classifier import TierClassifier
 from .compiler.compiler import PlanCompiler, Decompiler
 from .compiler.investigation import InvestigationMode
+import os
 from .tools import registry
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 models.Base.metadata.create_all(bind=database.engine)
 
+# Security Configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ENV = os.getenv("ENV", "development")
+
 app = FastAPI(title="Thinking Machines API")
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    # Only enable HSTS in production to avoid issues with local development without SSL
+    if ENV == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,  # Can't use both wildcard origins and credentials
+    # Restrict to known origins for better security
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -29,7 +46,7 @@ app.add_middleware(
 )
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=1000)
 
 @app.post("/query")
 async def process_query(request: QueryRequest, db: Session = Depends(database.get_db)):
