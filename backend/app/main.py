@@ -224,11 +224,24 @@ async def funnel_stream():
     """SSE: nudge stage counters with small deltas every few seconds to feel live."""
     async def gen():
         stages = ["Prospects", "Leads", "MQL", "SAL", "Opportunity", "Closed-Won"]
+        tick = 0
         while True:
+            # Heartbeat comment every ~20s keeps GFE / intermediate proxies alive
+            if tick % 5 == 0:
+                yield ": heartbeat\n\n"
             delta = {random.choice(stages): random.choice([-1, 1, 1, 2])}
             yield f"data: {json.dumps(delta)}\n\n"
             await asyncio.sleep(4)
-    return StreamingResponse(gen(), media_type="text/event-stream")
+            tick += 1
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @app.get("/health")
