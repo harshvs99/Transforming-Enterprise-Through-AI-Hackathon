@@ -120,3 +120,21 @@ export async function executeQuery(question: string) {
     throw error;
   }
 }
+
+/**
+ * Drill into a specific investigation hypothesis using live DB data
+ */
+export async function investigateHypothesis(payload: {
+  hypothesis_id: string;
+  hypothesis_title: string;
+  hypothesis_description: string;
+  original_question: string;
+}) {
+  const res = await fetch(apiUrl('/api/investigate'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Hypothesis investigation failed');
+  return res.json();
+}

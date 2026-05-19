@@ -242,6 +242,94 @@ async def funnel_stream():
     )
 
 
+class InvestigateRequest(BaseModel):
+    hypothesis_id: str
+    hypothesis_title: str
+    hypothesis_description: str
+    original_question: str
+
+
+@app.post("/investigate")
+async def investigate_hypothesis(request: InvestigateRequest, db: Session = Depends(database.get_db)):
+    """Run a real tool chain against live DB data to evaluate a specific hypothesis."""
+    rows = (
+        db.query(models.Entity)
+        .filter(models.Entity.entity_type == "daily_metrics")
+        .order_by(models.Entity.name.asc())
+        .all()
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="No synthetic data found. Run generate_data first.")
+
+    mql_series  = [int(float((r.properties or {}).get("mql", 0))) for r in rows]
+    cw_series   = [int(float((r.properties or {}).get("cw", 0)))  for r in rows]
+    cac_series  = [float((r.properties or {}).get("cac", 0)) for r in rows]
+    sal_series  = [int(float((r.properties or {}).get("sal", 0))) for r in rows]
+    opp_series  = [int(float((r.properties or {}).get("opp", 0))) for r in rows]
+
+    # Derived: stage conversion rate MQL → Closed-Won
+    conv_rate = [
+        (cw_series[i] / mql_series[i]) if mql_series[i] > 0 else 0.0
+        for i in range(len(mql_series))
+    ]
+
+    h_title = request.hypothesis_title.lower()
+    steps: list[dict] = []
+
+    if any(w in h_title for w in ("channel", "mix", "attribution", "source")):
+        half = max(len(mql_series) // 2, 1)
+        steps = [
+            {"tool": "compare_distributions_ks",  "params": {"sample1": mql_series[:half], "sample2": mql_series[half:]}},
+            {"tool": "detect_anomaly_zscore",      "params": {"data": cac_series[-30:] or cac_series, "threshold": 1.5}},
+        ]
+    elif any(w in h_title for w in ("conversion", "degradation", "rate", "funnel")):
+        steps = [
+            {"tool": "detect_anomaly_zscore",  "params": {"data": conv_rate, "threshold": 1.5}},
+            {"tool": "decompose_seasonality",  "params": {"data": mql_series[-30:] or mql_series, "period": 7}},
+        ]
+    elif any(w in h_title for w in ("season", "campaign", "burst", "spend", "timing")):
+        window = cac_series[-7:] if len(cac_series) >= 7 else cac_series
+        hist = [
+            cac_series[:7]   if len(cac_series) >= 7  else cac_series,
+            cac_series[7:14] if len(cac_series) >= 14 else cac_series,
+            cac_series[14:21] if len(cac_series) >= 21 else cac_series,
+        ]
+        steps = [
+            {"tool": "decompose_seasonality",  "params": {"data": cac_series[-30:] or cac_series, "period": 7}},
+            {"tool": "find_historical_analog", "params": {
+                "current_vector": window,
+                "historical_vectors": hist,
+                "historical_periods": ["Period -3", "Period -2", "Period -1"],
+            }},
+        ]
+    else:
+        steps = [
+            {"tool": "detect_anomaly_zscore", "params": {"data": cac_series[-30:] or cac_series, "threshold": 1.5}},
+            {"tool": "detect_anomaly_zscore", "params": {"data": mql_series[-30:] or mql_series, "threshold": 1.5}},
+        ]
+
+    executions = []
+    for step in steps:
+        tool = registry.get_tool(step["tool"])
+        if tool:
+            executions.append(tool.run(step["params"]))
+
+    decompiler = Decompiler()
+    q = (
+        f"Investigate hypothesis '{request.hypothesis_title}': {request.hypothesis_description}. "
+        f"Original question: {request.original_question}"
+    )
+    finding = await decompiler.decompile(q, executions)
+
+    return {
+        "hypothesis_id": request.hypothesis_id,
+        "hypothesis_title": request.hypothesis_title,
+        "finding": finding,
+        "executions": [ex.dict() for ex in executions],
+        "model": llm.model_name(),
+    }
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "llm_enabled": llm.is_enabled(), "model": llm.model_name()}
