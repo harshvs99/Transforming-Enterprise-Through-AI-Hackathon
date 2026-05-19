@@ -14,8 +14,6 @@ from .compiler.investigation import InvestigationMode
 from .tools import registry
 from pydantic import BaseModel
 
-models.Base.metadata.create_all(bind=database.engine)
-
 app = FastAPI(title="Thinking Machines API")
 
 app.add_middleware(

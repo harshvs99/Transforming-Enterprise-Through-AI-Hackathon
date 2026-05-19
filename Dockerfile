@@ -7,6 +7,8 @@ COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend .
+# Remove any local env files to ensure Docker uses relative URLs (nginx proxies /api/*)
+RUN rm -f .env.local .env.*.local
 RUN npm run build
 
 # Stage 2: Runtime — Python + Node + nginx in one container
@@ -17,7 +19,7 @@ WORKDIR /app
 # Install system dependencies and Node.js early (before Python deps)
 # so layer caching works: changes to requirements.txt don't invalidate Node
 RUN apt-get update \
- && apt-get install -y nginx curl ca-certificates gnupg \
+ && apt-get install -y nginx curl ca-certificates gnupg gettext-base \
  && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
  && apt-get install -y nodejs \
  && rm -rf /var/lib/apt/lists/*
@@ -36,7 +38,7 @@ COPY --from=frontend-builder /app/frontend/.next/static    /app/frontend/.next/s
 COPY --from=frontend-builder /app/frontend/public          /app/frontend/public
 
 # Nginx config and entrypoint
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx.conf.tpl /etc/nginx/nginx.conf.tpl
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

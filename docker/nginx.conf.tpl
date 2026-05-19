@@ -28,8 +28,8 @@ http {
   upstream frontend { server localhost:3000; }
 
   server {
-    listen 8080 default_server;
-    listen [::]:8080 default_server;
+    listen ${PORT} default_server;
+    listen [::]:${PORT} default_server;
     server_name _;
 
     # SSE stream — must not buffer
