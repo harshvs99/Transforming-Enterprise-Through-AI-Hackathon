@@ -73,3 +73,5 @@ Next.js 14.2.3 App Router, `output: 'export'` (fully static, no SSR/API routes).
 ### Deployment
 
 `.github/workflows/deploy.yml` builds the **frontend only** as a static site and publishes `frontend/out` to GitHub Pages on push to `main`. The backend is not deployed by CI — the static site assumes a backend reachable at `localhost:8000`.
+
+**Cloud Run deployments** happen exclusively through the GitHub repository — do not attempt direct `gcloud run deploy` commands. Push changes to `main`, and CI/CD will handle the Cloud Run build and deployment.
