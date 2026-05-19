@@ -8,7 +8,15 @@ export default function AskAnythingPage() {
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleCopy = async () => {
+    if (!response?.answer) return;
+    await navigator.clipboard.writeText(response.answer);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const runQuery = async (q: string) => {
     if (!q.trim()) return;
@@ -66,7 +74,9 @@ export default function AskAnythingPage() {
           <section className="space-y-4">
             <form onSubmit={handleQuery} className="space-y-4">
               <div className={`relative transition-all duration-300 ${isFocused ? 'neo-shadow-lg' : 'neo-shadow'}`}>
+                <label htmlFor="query-input" className="sr-only">Query your enterprise data</label>
                 <textarea
+                  id="query-input"
                   ref={textareaRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -74,6 +84,7 @@ export default function AskAnythingPage() {
                   onBlur={() => setIsFocused(false)}
                   onKeyDown={(e) => e.ctrlKey && e.key === 'Enter' && handleQuery()}
                   placeholder="Why did our CAC spike in October? What's our MRR trend? How does churn compare YoY?"
+                  aria-label="Enter your data query"
                   className="w-full bg-white border-4 border-primary p-6 font-body text-lg focus:outline-none min-h-40 resize-none color-transition overflow-hidden"
                   style={{
                     boxShadow: isFocused ? '8px 8px 0px 0px rgba(26, 26, 26, 1)' : '4px 4px 0px 0px rgba(26, 26, 26, 1)',
@@ -123,10 +134,22 @@ export default function AskAnythingPage() {
               animation: 'slideInUp 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             }}>
               {/* Main Answer */}
-              <div className="border-4 border-primary p-8 bg-white neo-shadow-lg relative overflow-hidden">
+              <div className="border-4 border-primary p-8 bg-white neo-shadow-lg relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-tertiary"></div>
                 <div className="pl-4">
-                  <h2 className="font-headline font-bold uppercase text-xs text-on-surface-variant mb-4">Answer</h2>
+                  <div className="flex justify-between items-start mb-4">
+                    <h2 className="font-headline font-bold uppercase text-xs text-on-surface-variant">Answer</h2>
+                    <button
+                      onClick={handleCopy}
+                      aria-label="Copy answer to clipboard"
+                      className="flex items-center gap-2 border-2 border-primary bg-surface px-3 py-1 text-[10px] font-label font-bold uppercase tracking-widest neo-shadow hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-active transition-all"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        {copied ? 'content_paste_go' : 'content_copy'}
+                      </span>
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
                   <p className="font-body text-lg leading-relaxed text-primary">{response.answer}</p>
                 </div>
               </div>
