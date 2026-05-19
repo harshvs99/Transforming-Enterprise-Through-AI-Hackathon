@@ -22,21 +22,24 @@ echo "✓ Nginx started (PID: $NGINX_PID)"
 # Give nginx a moment to start
 sleep 1
 
-# Create database tables before seed/generate scripts
 cd /app
-echo "Creating database tables..."
-python -c "from backend.app import database, models; models.Base.metadata.create_all(bind=database.engine)" || true
-echo "✓ Database tables created/verified"
 
-# Initialize database (idempotent; safe to skip on failure)
-echo "Seeding metrics..."
-python -m backend.app.seed_metrics || true
-echo "✓ Metrics seeded"
+# Initialize database in background (DB setup doesn't block backend startup)
+echo "Initializing database in background..."
+{
+  echo "Creating database tables..."
+  python -c "from backend.app import database, models; models.Base.metadata.create_all(bind=database.engine)" || true
+  echo "✓ Database tables created/verified"
 
-echo "Generating test data..."
-python -m backend.app.generate_data || true
-echo "✓ Test data generated"
+  echo "Seeding metrics..."
+  python -m backend.app.seed_metrics || true
+  echo "✓ Metrics seeded"
 
-# Start backend API (foreground)
+  echo "Generating test data..."
+  python -m backend.app.generate_data || true
+  echo "✓ Test data generated"
+} &
+
+# Start backend API immediately (foreground)
 echo "Starting FastAPI backend on port 8000..."
 exec uvicorn backend.app.main:app --host 0.0.0.0 --port 8000

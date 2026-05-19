@@ -11,3 +11,5 @@ server.log
 frontend_server.log
 .env
 stitch_thinking_machines_platform_build/
+google-cloud-cli-linux-x86_64.tar.gz
+google-cloud-sdk/
