@@ -45,45 +45,53 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col h-screen w-72 border-r-4 border-primary bg-surface p-4 gap-2 shrink-0 z-20 overflow-y-auto animate-in slide-in-from-left duration-400">
-      <div className="mb-8 mt-4 px-4">
+    <aside className="flex flex-col h-screen w-14 lg:w-72 border-r-4 border-primary bg-surface p-2 lg:p-4 gap-2 shrink-0 z-20 overflow-y-auto animate-in slide-in-from-left duration-400">
+      {/* Logo — full on desktop, icon-only on mobile */}
+      <div className="hidden lg:block mb-8 mt-4 px-4">
         <h1 className="text-2xl font-headline font-black uppercase text-primary tracking-tighter">
           Thinking Machines
         </h1>
         <p className="font-mono text-xs text-on-surface-variant mt-1">Enterprise Analytics v2.5</p>
       </div>
+      <div className="lg:hidden flex justify-center mb-4 mt-3">
+        <span className="material-symbols-outlined text-primary text-2xl">psychology</span>
+      </div>
 
+      {/* New Analysis — full on desktop, icon-only on mobile */}
       <Link
         href="/ask-anything"
-        className="w-full bg-primary-fixed text-on-primary-fixed border-4 border-primary neo-shadow px-4 py-3 font-label font-bold uppercase text-xs tracking-widest mb-6 transition-all duration-300 ease-out hover:translate-x-1 hover:translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary"
+        className="w-full bg-primary-fixed text-on-primary-fixed border-4 border-primary neo-shadow px-2 lg:px-4 py-3 font-label font-bold uppercase text-xs tracking-widest mb-4 lg:mb-6 transition-all duration-300 ease-out hover:translate-x-1 hover:translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary flex items-center justify-center lg:justify-start gap-2"
+        title="New Analysis"
       >
-        New Analysis
+        <span className="material-symbols-outlined text-lg shrink-0">add</span>
+        <span className="hidden lg:inline">New Analysis</span>
       </Link>
 
-      <nav className="flex-1 flex flex-col gap-2">
+      <nav className="flex-1 flex flex-col gap-1 lg:gap-2">
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`px-4 py-3 flex items-center gap-3 border-2 font-label font-bold uppercase text-xs tracking-widest transition-all duration-300 ease-out focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary ${
+              title={item.label}
+              className={`px-2 lg:px-4 py-3 flex items-center justify-center lg:justify-start gap-3 border-2 font-label font-bold uppercase text-xs tracking-widest transition-all duration-300 ease-out focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary ${
                 active
                   ? "bg-primary-fixed text-on-primary-fixed border-primary neo-shadow"
-                  : "text-primary border-transparent hover:border-primary hover:bg-surface-container-high hover:translate-x-1"
+                  : "text-primary border-transparent hover:border-primary hover:bg-surface-container-high lg:hover:translate-x-1"
               }`}
             >
-              <span className="material-symbols-outlined text-lg">{item.icon}</span>
-              {item.label}
-              {active && <span className="material-symbols-outlined text-lg ml-auto">check</span>}
+              <span className="material-symbols-outlined text-lg shrink-0">{item.icon}</span>
+              <span className="hidden lg:inline">{item.label}</span>
+              {active && <span className="material-symbols-outlined text-lg ml-auto hidden lg:block">check</span>}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t-2 border-primary px-4 py-4 space-y-3">
-        {/* LLM status light */}
-        <div className="flex items-center gap-2">
+      <div className="mt-auto pt-4 border-t-2 border-primary px-1 lg:px-4 py-4 space-y-3">
+        {/* LLM status indicator */}
+        <div className="flex items-center justify-center lg:justify-start gap-2">
           {llmStatus === null ? (
             <span className="w-2.5 h-2.5 rounded-full bg-on-surface-variant animate-pulse flex-shrink-0" />
           ) : llmStatus.enabled ? (
@@ -91,7 +99,7 @@ export default function Sidebar() {
           ) : (
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
           )}
-          <div className="min-w-0">
+          <div className="hidden lg:block min-w-0">
             <p className="font-mono text-[9px] uppercase text-on-surface-variant tracking-widest leading-tight">
               {llmStatus === null
                 ? "Checking LLM…"
@@ -106,7 +114,7 @@ export default function Sidebar() {
             )}
           </div>
         </div>
-        <div className="text-[10px] font-mono uppercase text-on-surface-variant tracking-widest">
+        <div className="hidden lg:block text-[10px] font-mono uppercase text-on-surface-variant tracking-widest">
           <p>© 2026 Thinking Machines</p>
         </div>
       </div>

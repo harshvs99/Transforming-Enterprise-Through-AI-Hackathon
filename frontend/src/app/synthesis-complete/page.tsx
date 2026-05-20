@@ -106,7 +106,7 @@ export default function SynthesisCompletePage() {
               <div className="space-y-2">
                 {funnel.stages?.map((s: any) => (
                   <div key={s.name} className="flex items-center gap-3">
-                    <span className={`font-headline font-bold uppercase text-[10px] w-32 flex-shrink-0 ${s.anomaly ? "text-secondary" : "text-on-surface-variant"}`}>{s.name}</span>
+                    <span className={`font-headline font-bold uppercase text-[10px] w-20 sm:w-32 flex-shrink-0 ${s.anomaly ? "text-secondary" : "text-on-surface-variant"}`}>{s.name}</span>
                     <div className="flex-1 bg-surface h-7 border-2 border-primary relative overflow-hidden">
                       <div className={`h-full ${s.anomaly ? "bg-secondary" : "bg-primary"} transition-all`}
                         style={{width: `${Math.min(100, (s.count/(funnel.stages[0].count||1))*100)}%`}} />
@@ -120,7 +120,7 @@ export default function SynthesisCompletePage() {
             {/* Session activity */}
             <div className="border-4 border-primary p-6 bg-surface neo-shadow">
               <h3 className="font-headline font-bold uppercase text-sm text-on-surface-variant mb-4">Session Activity</h3>
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 {[
                   { label: "Queries Run",    value: queryEvents.length },
                   { label: "System Events",  value: successCount },

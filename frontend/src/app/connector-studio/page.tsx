@@ -221,7 +221,7 @@ export default function ConnectorStudioPage() {
 
       <div className="p-6 lg:p-10 space-y-6 max-w-4xl mx-auto">
         {!loading && connectors.length > 0 && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { label: "Total Connectors", value: connectors.length },
               { label: "Configured",       value: configured },

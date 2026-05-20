@@ -79,12 +79,12 @@ export default function ChannelConstellationPage() {
   return (
     <div className="bg-background min-h-screen">
       <header className="bg-background border-b-4 border-primary px-6 lg:px-10 py-4 sticky top-0 z-40">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-headline font-black text-2xl uppercase tracking-tighter text-primary">Channel Constellation</h1>
+            <h1 className="font-headline font-black text-xl sm:text-2xl uppercase tracking-tighter text-primary">Channel Constellation</h1>
             <p className="font-headline font-bold text-xs uppercase text-on-surface-variant mt-1">Visualize acquisition channel performance</p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {["7d","30d","Quarter","YTD"].map(tr => (
               <button key={tr} onClick={() => setTimeRange(tr)}
                 className={`font-headline font-bold text-[10px] uppercase border-2 border-primary px-3 py-1 transition-colors ${timeRange===tr ? "bg-primary text-white" : "bg-white hover:bg-primary hover:text-white"}`}>
@@ -148,7 +148,7 @@ export default function ChannelConstellationPage() {
                   <h3 className="font-headline font-black text-xl uppercase text-primary">{selected}</h3>
                   <button onClick={() => setSelected(null)} className="font-mono text-xs text-on-surface-variant hover:text-primary">✕ close</button>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
                     { label: "Leads",      value: selectedData.leads.toLocaleString() },
                     { label: "MQLs",       value: selectedData.mqls.toLocaleString() },

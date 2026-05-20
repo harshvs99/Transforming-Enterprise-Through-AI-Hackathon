@@ -111,7 +111,7 @@ export default function DataIngestionPage() {
 
         {/* Summary stats */}
         {!loading && connectors.length > 0 && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               { label: "Stored Records",  value: totalRecords.toLocaleString() },
               { label: "Active Sources",  value: connected },
@@ -189,7 +189,7 @@ export default function DataIngestionPage() {
         <div className="space-y-4">
           {connectors.map(c => (
             <div key={c.id} className="border-4 border-primary bg-white neo-shadow overflow-hidden">
-              <div className="p-5 flex items-center gap-4">
+              <div className="p-4 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
                 <div className="w-10 h-10 bg-primary-fixed border-2 border-primary flex items-center justify-center flex-shrink-0">
                   <span className="material-symbols-outlined text-primary text-lg">{c.icon}</span>
                 </div>
@@ -206,7 +206,7 @@ export default function DataIngestionPage() {
                     <p className="font-mono text-[10px] text-on-surface-variant mt-0.5">Not yet synced</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className={`font-headline font-bold text-[10px] uppercase px-2 py-1 text-white ${STATUS_BAR[c.status] ?? "bg-on-surface-variant"}`}>
                     {c.status}
                   </span>

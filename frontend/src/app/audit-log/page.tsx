@@ -94,7 +94,7 @@ export default function AuditLogPage() {
       </header>
 
       <div className="p-6 lg:p-10 max-w-4xl mx-auto space-y-6">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { label: "Total", value: counts.total,   color: "text-primary" },
             { label: "OK",    value: counts.success, color: "text-tertiary" },

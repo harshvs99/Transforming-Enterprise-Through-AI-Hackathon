@@ -130,9 +130,9 @@ export default function InitializeBrainPage() {
             <span className="font-mono text-[10px] text-white opacity-70 uppercase">affects connectors &amp; data sources</span>
           </div>
 
-          <div className="p-6 bg-white flex items-start gap-6">
+          <div className="p-4 sm:p-6 bg-white flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
             {/* Toggle control */}
-            <div className="flex flex-col items-center gap-2 shrink-0">
+            <div className="flex sm:flex-col items-center gap-4 sm:gap-2 shrink-0">
               <button
                 onClick={handleToggleMode}
                 disabled={toggling}
@@ -153,7 +153,7 @@ export default function InitializeBrainPage() {
             </div>
 
             {/* Mode description */}
-            <div className="flex-1 grid grid-cols-2 gap-4">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* DEV column */}
               <div className={`border-2 p-4 transition-colors ${devMode ? "border-amber-400 bg-amber-50" : "border-primary opacity-50 bg-white"}`}>
                 <p className="font-headline font-bold uppercase text-xs text-amber-700 mb-2">Dev Mode</p>

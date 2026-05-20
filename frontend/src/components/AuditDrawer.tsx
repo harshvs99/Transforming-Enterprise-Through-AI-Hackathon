@@ -14,21 +14,21 @@ export default function AuditDrawer({
 }) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-      <div className="bg-slate-800/50 p-4 border-b border-slate-700 flex justify-between items-center">
+      <div className="bg-slate-800/50 p-4 border-b border-slate-700 flex flex-wrap justify-between items-center gap-2">
         <div className="flex items-center gap-3">
            <div className="bg-cyan-500/20 text-cyan-400 p-1.5 rounded-lg">
               <Database size={18} />
            </div>
            <h3 className="text-white font-bold uppercase tracking-widest text-xs">Deterministic Audit Trail</h3>
         </div>
-        <div className="flex gap-4 font-mono text-[10px] uppercase tracking-widest font-bold">
+        <div className="flex gap-4 font-mono text-[10px] uppercase tracking-widest font-bold flex-wrap">
           <span className="flex items-center gap-1.5">
             <span className="text-slate-500">Tier:</span>
             <span className={tier === 1 ? 'text-emerald-500' : tier === 2 ? 'text-amber-500' : 'text-rose-500'}>{tier}</span>
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="text-slate-500">Compiler:</span>
-            <span className="text-cyan-400">{model}</span>
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="text-slate-500 shrink-0">Compiler:</span>
+            <span className="text-cyan-400 truncate max-w-[120px] sm:max-w-none">{model}</span>
           </span>
         </div>
       </div>
@@ -80,11 +80,11 @@ export default function AuditDrawer({
                 <div className="flex flex-col gap-2">
                   <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
                     <span className="text-slate-700 uppercase">Input Params:</span>
-                    <span className="truncate max-w-md">{JSON.stringify(ex.inputs)}</span>
+                    <span className="truncate max-w-[160px] sm:max-w-md">{JSON.stringify(ex.inputs)}</span>
                   </div>
                   <div className="text-[10px] text-emerald-500/80 font-mono flex items-center gap-2">
                     <span className="text-slate-700 uppercase">Output Result:</span>
-                    <span className="truncate max-w-md">{JSON.stringify(ex.output)}</span>
+                    <span className="truncate max-w-[160px] sm:max-w-md">{JSON.stringify(ex.output)}</span>
                   </div>
                 </div>
               </div>

@@ -131,22 +131,22 @@ export default function DashboardPage() {
   return (
     <div className="bg-background min-h-screen font-body">
       {/* PAGE HEADER */}
-      <div className="border-b-4 border-primary px-8 py-5 flex items-center justify-between gap-6 bg-background sticky top-0 z-20">
+      <div className="border-b-4 border-primary px-4 sm:px-8 py-4 sm:py-5 flex flex-wrap items-center justify-between gap-3 sm:gap-6 bg-background sticky top-0 z-20">
         <div>
-          <h1 className="font-headline font-black uppercase text-xl tracking-tight text-primary leading-none">
+          <h1 className="font-headline font-black uppercase text-lg sm:text-xl tracking-tight text-primary leading-none">
             Pipeline Overview
           </h1>
           <p className="font-body text-xs text-on-surface-variant mt-1">— TestPilot Inc.</p>
         </div>
 
         {/* Right side: time range + filters */}
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
           <div className="flex border-2 border-primary">
             {TIME_RANGES.map((r, i) => (
               <button
                 key={r}
                 onClick={() => setTimeRange(r)}
-                className={`px-4 py-2 text-[11px] font-label font-bold uppercase tracking-widest transition-colors ${
+                className={`px-2 sm:px-4 py-2 text-[10px] sm:text-[11px] font-label font-bold uppercase tracking-widest transition-colors ${
                   timeRange === r
                     ? "bg-[#06B6D4] text-primary"
                     : "bg-background text-on-surface-variant hover:bg-surface-variant"
@@ -157,10 +157,10 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <button className="border-2 border-primary bg-primary text-primary-fixed px-4 py-2 text-[11px] font-label font-bold uppercase tracking-widest neo-shadow hover:translate-x-px hover:translate-y-px transition-transform">
+          <button className="border-2 border-primary bg-primary text-primary-fixed px-2 sm:px-4 py-2 text-[10px] sm:text-[11px] font-label font-bold uppercase tracking-widest neo-shadow hover:translate-x-px hover:translate-y-px transition-transform">
             Segments
           </button>
-          <button className="border-2 border-primary bg-primary text-primary-fixed px-4 py-2 text-[11px] font-label font-bold uppercase tracking-widest neo-shadow hover:translate-x-px hover:translate-y-px transition-transform">
+          <button className="border-2 border-primary bg-primary text-primary-fixed px-2 sm:px-4 py-2 text-[10px] sm:text-[11px] font-label font-bold uppercase tracking-widest neo-shadow hover:translate-x-px hover:translate-y-px transition-transform">
             Channels
           </button>
         </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
         )}
 
         {/* KPI CARDS */}
-        <section className="grid grid-cols-4 gap-4 mb-6">
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <KpiCard
             label="CAC"
             value={funnel ? `$${funnel.key_metrics.cac.toLocaleString()}` : "—"}
@@ -223,7 +223,7 @@ export default function DashboardPage() {
         {/* MARKETING FUNNEL SECTION */}
         <section className="border-4 border-primary neo-shadow mb-6">
           {/* Funnel header */}
-          <div className="border-b-4 border-primary px-6 py-4 flex items-center justify-between gap-6 flex-wrap">
+          <div className="border-b-4 border-primary px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-6">
             <div>
               <h2 className="font-headline font-black uppercase text-sm tracking-wide text-primary leading-none">
                 Marketing Funnel
@@ -233,9 +233,9 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6">
               {/* Channel legend */}
-              <div className="flex gap-5">
+              <div className="flex flex-wrap gap-3 sm:gap-5">
                 {Object.entries(CHANNEL_COLORS).map(([ch, color]) => (
                   <div key={ch} className="flex items-center gap-1.5">
                     <span
@@ -329,7 +329,7 @@ export default function DashboardPage() {
                       {/* Conversion rate badge between stages */}
                       {convRate && (
                         <div className="flex items-center gap-4 h-6 mb-1">
-                          <div className="w-[130px] shrink-0" />
+                          <div className="w-[80px] sm:w-[130px] shrink-0" />
                           <span className="text-[9px] font-label font-bold uppercase tracking-wider text-on-surface-variant">
                             ↓ {convRate} conv.
                           </span>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
                         style={{ height: 44 }}
                       >
                         {/* Label */}
-                        <div className="w-[130px] text-right shrink-0 flex items-center justify-end gap-2">
+                        <div className="w-[80px] sm:w-[130px] text-right shrink-0 flex items-center justify-end gap-2">
                           {stage.anomaly && (
                             <span
                               className="w-2 h-2 inline-block animate-pulse shrink-0"
@@ -468,7 +468,7 @@ export default function DashboardPage() {
         </section>
 
         {/* PERFORMANCE TABLES */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Channel Performance */}
           <section className="border-4 border-primary neo-shadow">
             <div className="border-b-4 border-primary px-5 py-3">
