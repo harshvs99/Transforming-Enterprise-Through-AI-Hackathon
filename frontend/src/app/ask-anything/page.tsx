@@ -522,7 +522,11 @@ export default function AskAnythingPage() {
             onSubmit={(e) => { e.preventDefault(); submitQuery(query); }}
             className="flex gap-3 items-end"
           >
+            <label htmlFor="query-input" className="sr-only">
+              {turns.length > 0 ? "Ask a follow-up question" : "Enter your analysis question"}
+            </label>
             <textarea
+              id="query-input"
               ref={textareaRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -535,6 +539,7 @@ export default function AskAnythingPage() {
             <button
               type="submit"
               disabled={loading || !query.trim()}
+              aria-label={loading ? "Executing query" : turns.length > 0 ? "Send follow-up" : "Submit question"}
               className="bg-primary text-white border-4 border-primary px-6 py-4 font-headline font-black uppercase text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               style={{ boxShadow: "4px 4px 0px 0px rgba(26,26,26,1)" }}
             >
