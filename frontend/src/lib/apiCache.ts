@@ -192,6 +192,13 @@ export async function fetchFunnel(timeRange = '30d') {
   }, 120_000);
 }
 
+/** Fetch health / LLM status */
+export async function fetchHealth(): Promise<{ ok: boolean; llm_enabled: boolean; model: string; dev_mode: boolean }> {
+  const res = await fetch(apiUrl('/api/health'));
+  if (!res.ok) throw new Error('Health check failed');
+  return res.json();
+}
+
 /**
  * Drill into a specific investigation hypothesis using live DB data
  */

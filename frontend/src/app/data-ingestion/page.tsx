@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchConnectors, syncConnector, fetchConnectorData } from "@/lib/apiCache";
+import { apiUrl } from "@/lib/apiBase";
 
 interface Connector {
   id: string;
@@ -13,19 +14,45 @@ interface Connector {
   dev_mode: boolean;
 }
 
+interface AuditEvent {
+  id: number;
+  timestamp: string;
+  action: string;
+  detail: string;
+  level: string;
+}
+
 const STATUS_BAR: Record<string, string> = {
   connected:    "bg-tertiary",
   configured:   "bg-secondary",
   disconnected: "bg-on-surface-variant",
 };
 
+const LEVEL_DOT: Record<string, string> = {
+  success: "bg-green-400",
+  warning: "bg-amber-400",
+  info:    "bg-blue-400",
+};
+
+const LEVEL_TEXT: Record<string, string> = {
+  success: "text-green-400",
+  warning: "text-amber-400",
+  info:    "text-blue-400",
+};
+
+const MAX_EVENTS = 80;
+
 export default function DataIngestionPage() {
-  const [connectors, setConnectors] = useState<Connector[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState<string | null>(null);
-  const [syncing, setSyncing]       = useState<Record<string, boolean>>({});
-  const [preview, setPreview]       = useState<Record<string, any>>({});
-  const [previewLoading, setPreviewLoading] = useState<Record<string, boolean>>({});
+  const [connectors, setConnectors]           = useState<Connector[]>([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
+  const [syncing, setSyncing]                 = useState<Record<string, boolean>>({});
+  const [preview, setPreview]                 = useState<Record<string, any>>({});
+  const [previewLoading, setPreviewLoading]   = useState<Record<string, boolean>>({});
+  const [auditEvents, setAuditEvents]         = useState<AuditEvent[]>([]);
+  const [streamConnected, setStreamConnected] = useState(false);
+  const eventIdRef = useRef(0);
+  const feedRef    = useRef<HTMLDivElement>(null);
 
   const load = async () => {
     try {
@@ -40,14 +67,25 @@ export default function DataIngestionPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Connect to the real audit SSE stream
+  useEffect(() => {
+    const es = new EventSource(apiUrl("/api/audit/stream"));
+    es.onopen  = () => setStreamConnected(true);
+    es.onerror = () => setStreamConnected(false);
+    es.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data);
+        const id = ++eventIdRef.current;
+        setAuditEvents(prev => [{ ...ev, id }, ...prev].slice(0, MAX_EVENTS));
+      } catch {}
+    };
+    return () => { es.close(); setStreamConnected(false); };
+  }, []);
+
   const handleSync = async (id: string) => {
     setSyncing(s => ({ ...s, [id]: true }));
-    try {
-      await syncConnector(id);
-      await load();
-    } finally {
-      setSyncing(s => ({ ...s, [id]: false }));
-    }
+    try { await syncConnector(id); await load(); }
+    finally { setSyncing(s => ({ ...s, [id]: false })); }
   };
 
   const handlePreview = async (id: string) => {
@@ -56,9 +94,7 @@ export default function DataIngestionPage() {
     try {
       const data = await fetchConnectorData(id);
       setPreview(p => ({ ...p, [id]: data }));
-    } finally {
-      setPreviewLoading(p => ({ ...p, [id]: false }));
-    }
+    } finally { setPreviewLoading(p => ({ ...p, [id]: false })); }
   };
 
   const totalRecords = connectors.reduce((s, c) => s + (c.record_count || 0), 0);
@@ -71,12 +107,14 @@ export default function DataIngestionPage() {
         <p className="font-headline font-bold text-xs uppercase text-on-surface-variant mt-1">Stream and manage data source imports</p>
       </header>
 
-      <div className="p-6 lg:p-10 space-y-8 max-w-4xl mx-auto">
+      <div className="p-6 lg:p-10 space-y-8 max-w-5xl mx-auto">
+
+        {/* Summary stats */}
         {!loading && connectors.length > 0 && (
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total Records",   value: totalRecords.toLocaleString() },
-              { label: "Active Streams",  value: connected },
+              { label: "Stored Records",  value: totalRecords.toLocaleString() },
+              { label: "Active Sources",  value: connected },
               { label: "Data Sources",    value: connectors.length },
             ].map(({ label, value }) => (
               <div key={label} className="border-4 border-primary p-4 bg-white neo-shadow text-center">
@@ -96,6 +134,58 @@ export default function DataIngestionPage() {
 
         {error && <div className="border-4 border-red-500 p-6 bg-red-50 neo-shadow"><p className="font-mono text-sm text-red-700">{error}</p></div>}
 
+        {/* System activity feed */}
+        <div className="border-4 border-primary bg-white neo-shadow overflow-hidden">
+          <div className="bg-primary px-5 py-3 flex items-center gap-3">
+            <span
+              className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                streamConnected
+                  ? "bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.6)]"
+                  : "bg-amber-300 animate-pulse"
+              }`}
+            />
+            <h2 className="font-headline font-black uppercase text-sm text-white tracking-tight flex-1">
+              System Activity
+            </h2>
+            <span className="font-mono text-[9px] text-white opacity-70 uppercase">
+              {streamConnected ? "Live — audit log" : "Connecting…"}
+            </span>
+          </div>
+
+          <div
+            ref={feedRef}
+            className="h-72 overflow-y-auto bg-gray-950 font-mono text-[11px] leading-relaxed p-3 space-y-1"
+          >
+            {auditEvents.length === 0 && (
+              <p className="text-gray-500 text-center py-8">
+                {streamConnected ? "Waiting for system events — run a query to see activity" : "Connecting to audit stream…"}
+              </p>
+            )}
+            {auditEvents.map(ev => (
+              <div
+                key={ev.id}
+                className="flex items-start gap-2 border-b border-gray-800 pb-1 animate-in fade-in duration-200"
+              >
+                <span className="text-gray-500 text-[9px] tabular-nums shrink-0 pt-0.5">
+                  {new Date(ev.timestamp).toLocaleTimeString()}
+                </span>
+                <span className={`shrink-0 pt-0.5 ${LEVEL_DOT[ev.level] ?? "bg-gray-500"} w-1.5 h-1.5 rounded-full mt-1`} />
+                <span className="text-gray-300 shrink-0">[{ev.action}]</span>
+                <span className={`${LEVEL_TEXT[ev.level] ?? "text-gray-400"} flex-1 min-w-0 truncate`}>
+                  {ev.detail}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-900 px-4 py-2 flex gap-4 text-[9px] font-mono text-gray-400 uppercase">
+            <span>{auditEvents.length} events</span>
+            <span>·</span>
+            <span>Real system events — queries, syncs, investigations</span>
+          </div>
+        </div>
+
+        {/* Connector cards */}
         <div className="space-y-4">
           {connectors.map(c => (
             <div key={c.id} className="border-4 border-primary bg-white neo-shadow overflow-hidden">
@@ -131,19 +221,16 @@ export default function DataIngestionPage() {
                 </div>
               </div>
 
-              {/* Progress bar */}
               <div className="h-1 bg-surface">
                 <div className={`h-full ${STATUS_BAR[c.status] ?? "bg-on-surface-variant"} transition-all`}
                   style={{width: c.status === "connected" ? "100%" : c.status === "configured" ? "50%" : "10%"}} />
               </div>
 
-              {/* Data preview */}
               {preview[c.id] && (
                 <div className="border-t-2 border-primary p-4 bg-surface space-y-3">
                   <p className="font-headline font-bold uppercase text-[10px] text-on-surface-variant">
                     Data Preview — {preview[c.id].record_count?.toLocaleString()} records · {c.dev_mode ? "Simulated" : "Live"}
                   </p>
-                  {/* Show stats if available */}
                   {preview[c.id].stats && (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {Object.entries(preview[c.id].stats).slice(0, 6).map(([k, v]) => (
@@ -156,7 +243,6 @@ export default function DataIngestionPage() {
                       ))}
                     </div>
                   )}
-                  {/* Raw JSON snippet */}
                   <details className="cursor-pointer">
                     <summary className="font-mono text-[10px] text-on-surface-variant hover:text-primary">View raw data structure</summary>
                     <pre className="mt-2 text-[10px] font-mono text-on-surface-variant bg-white border-2 border-primary p-3 overflow-x-auto max-h-48 overflow-y-auto">

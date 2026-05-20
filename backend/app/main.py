@@ -108,11 +108,53 @@ _CONNECTOR_DEFS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# In-memory connector state
+# In-memory connector state (hydrated from DB on startup)
 _connector_state: Dict[str, Dict[str, Any]] = {
     cid: {"configured": False, "status": "disconnected", "last_sync": None, "config": {}, "record_count": 0}
     for cid in _CONNECTOR_DEFS
 }
+
+
+def _persist_connector(db: Session, connector_id: str) -> None:
+    """Write current in-memory connector state to SQLite."""
+    state = _connector_state[connector_id]
+    row = db.query(models.ConnectorState).filter_by(id=connector_id).first()
+    if not row:
+        row = models.ConnectorState(id=connector_id)
+        db.add(row)
+    row.configured   = state["configured"]
+    row.status       = state["status"]
+    row.record_count = state["record_count"]
+    ls = state.get("last_sync")
+    if ls:
+        try:
+            row.last_sync = datetime.fromisoformat(ls.replace("Z", "+00:00"))
+        except Exception:
+            row.last_sync = None
+    else:
+        row.last_sync = None
+    row.updated_at = datetime.now(timezone.utc)
+    db.commit()
+
+
+@app.on_event("startup")
+async def _load_connector_states() -> None:
+    """Hydrate in-memory connector state from persisted DB rows."""
+    db = database.SessionLocal()
+    try:
+        rows = db.query(models.ConnectorState).all()
+        for row in rows:
+            if row.id in _connector_state:
+                _connector_state[row.id].update({
+                    "configured":   row.configured,
+                    "status":       row.status,
+                    "record_count": row.record_count,
+                    "last_sync":    row.last_sync.isoformat() if row.last_sync else None,
+                })
+        if rows:
+            _log("System", f"Restored {len(rows)} connector state(s) from DB", "success")
+    finally:
+        db.close()
 
 # ---------------------------------------------------------------------------
 # Simulated connector data (DEV_MODE)
@@ -313,7 +355,7 @@ async def process_query(request: QueryRequest, db: Session = Depends(database.ge
             "investigation_mode": True,
         }
 
-    plan = await compiler.compile(request.question, resolved_metrics, tier_result.suggested_playbook_id)
+    plan = await compiler.compile(request.question, resolved_metrics, tier_result.suggested_playbook_id, db=db)
 
     executions = []
     for step in plan.steps:
@@ -434,19 +476,39 @@ def get_funnel(time_range: str = "30d", db: Session = Depends(database.get_db)):
     }
 
 
-@app.get("/funnel/stream")
-async def funnel_stream():
-    """SSE: nudge stage counters with small deltas every few seconds to feel live."""
+
+
+# ---------------------------------------------------------------------------
+# Audit log SSE stream — real system events only
+# ---------------------------------------------------------------------------
+
+@app.get("/audit/stream")
+async def audit_stream():
+    """SSE: streams real audit log events as they occur in the system."""
     async def gen():
-        stages = ["Prospects", "Leads", "MQL", "SAL", "Opportunity", "Closed-Won"]
+        # Send the 10 most recent existing events on connect (oldest-first for display order)
+        snapshot = list(_audit_log)
+        for ev in reversed(snapshot[:10]):
+            yield f"data: {json.dumps(ev)}\n\n"
+
+        last_ts = snapshot[0]["timestamp"] if snapshot else ""
+
         tick = 0
         while True:
-            if tick % 5 == 0:
-                yield ": heartbeat\n\n"
-            delta = {random.choice(stages): random.choice([-1, 1, 1, 2])}
-            yield f"data: {json.dumps(delta)}\n\n"
-            await asyncio.sleep(4)
+            await asyncio.sleep(1.0)
+            new_events = []
+            for ev in _audit_log:  # deque is newest-first
+                if ev["timestamp"] <= last_ts:
+                    break
+                new_events.append(ev)
+            for ev in reversed(new_events):  # emit oldest-first
+                yield f"data: {json.dumps(ev)}\n\n"
+            if new_events:
+                last_ts = new_events[0]["timestamp"]
             tick += 1
+            if tick % 30 == 0:
+                yield ": heartbeat\n\n"
+
     return StreamingResponse(gen(), media_type="text/event-stream", headers={
         "Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive",
     })
@@ -535,22 +597,24 @@ def list_connectors():
 
 
 @app.post("/connectors/{connector_id}/configure")
-async def configure_connector(connector_id: str, body: ConnectorConfigRequest):
+async def configure_connector(connector_id: str, body: ConnectorConfigRequest, db: Session = Depends(database.get_db)):
     if connector_id not in _CONNECTOR_DEFS:
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector_id}")
     _connector_state[connector_id].update({"config": body.config, "configured": True, "status": "configured"})
+    _persist_connector(db, connector_id)
     _log(f"Connector", f"{_CONNECTOR_DEFS[connector_id]['name']} configuration saved", "success")
     return {"ok": True, "connector": connector_id, "status": "configured"}
 
 
 @app.post("/connectors/{connector_id}/test")
-async def test_connector(connector_id: str):
+async def test_connector(connector_id: str, db: Session = Depends(database.get_db)):
     if connector_id not in _CONNECTOR_DEFS:
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector_id}")
     await asyncio.sleep(0.6)
     state = _connector_state[connector_id]
     if DEV_MODE or state["configured"]:
         _connector_state[connector_id]["status"] = "connected"
+        _persist_connector(db, connector_id)
         name = _CONNECTOR_DEFS[connector_id]["name"]
         _log("Connector", f"{name} connection test passed", "success")
         return {"ok": True, "message": f"Connected to {name} successfully"}
@@ -558,7 +622,7 @@ async def test_connector(connector_id: str):
 
 
 @app.post("/connectors/{connector_id}/sync")
-async def sync_connector(connector_id: str):
+async def sync_connector(connector_id: str, db: Session = Depends(database.get_db)):
     if connector_id not in _CONNECTOR_DEFS:
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector_id}")
     if not DEV_MODE and not _connector_state[connector_id]["configured"]:
@@ -568,6 +632,7 @@ async def sync_connector(connector_id: str):
     data = _get_simulated_data(connector_id)
     rc   = data.get("record_count", 0)
     _connector_state[connector_id].update({"status": "connected", "last_sync": now, "record_count": rc})
+    _persist_connector(db, connector_id)
     name = _CONNECTOR_DEFS[connector_id]["name"]
     _log("Connector", f"{name} sync complete — {rc:,} records", "success")
     return {"ok": True, "synced_at": now, "record_count": rc}

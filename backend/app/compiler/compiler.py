@@ -13,27 +13,79 @@ class ExecutionPlan(BaseModel):
     steps: List[ToolCall]
 
 class PlanCompiler:
-    async def compile(self, question: str, resolved_metrics: ResolvedMetrics, playbook_id: Optional[str] = None) -> ExecutionPlan:
+    async def compile(self, question: str, resolved_metrics: ResolvedMetrics, playbook_id: Optional[str] = None, db=None) -> ExecutionPlan:
         steps = []
 
         # Rule 1: Never invent tools. Only use from registry.
         # Rule 2: Never do analytical reasoning here. Only chain tools.
 
+        # Load real time-series data from the DB when available.
+        cac_series: Optional[List[float]] = None
+        mql_series: Optional[List[float]] = None
+        if db is not None:
+            from ..models import Entity
+            rows = (
+                db.query(Entity)
+                .filter(Entity.entity_type == "daily_metrics")
+                .order_by(Entity.name.asc())
+                .all()
+            )
+            if rows:
+                cac_series = [float((r.properties or {}).get("cac", 0)) for r in rows]
+                mql_series = [float((r.properties or {}).get("mql", 0)) for r in rows]
+
+        _demo = [10, 11, 12, 11, 10, 25, 22]
+        cac_data: List[float] = cac_series or _demo
+        mql_data: List[float] = mql_series or _demo
+
         if playbook_id == "metric_anomaly_diagnosis":
-            steps.append(ToolCall(tool="decompose_seasonality", params={"data": [10, 11, 12, 11, 10, 25, 22], "period": 7}))
-            steps.append(ToolCall(tool="detect_anomaly_zscore", params={"data": [10, 11, 12, 11, 10, 25, 22], "threshold": 1.5}))
-            steps.append(ToolCall(tool="find_historical_analog", params={
-                "current_vector": [25, 22],
-                "historical_vectors": [[10, 12], [20, 21], [15, 14]],
-                "historical_periods": ["Oct 2024", "Nov 2024", "Dec 2024"]
-            }))
+            window = 30
+            n = len(cac_data)
+            current_win = cac_data[-window:] if n >= window else cac_data
+            target_len = len(current_win)
+
+            def _window_at(end: int) -> List[float]:
+                s = max(0, end - target_len)
+                chunk = cac_data[s:end]
+                # Pad to target_len if the chunk is shorter
+                if len(chunk) < target_len:
+                    chunk = chunk + [chunk[-1]] * (target_len - len(chunk))
+                return chunk[:target_len]
+
+            hist_ends = [n - window, n - 2 * window, n - 3 * window]
+            hist_vecs = [_window_at(e) for e in hist_ends if e > 0][:3]
+            hist_labels = ["3 months ago", "6 months ago", "9 months ago"][: len(hist_vecs)]
+            if not hist_vecs:
+                hist_vecs = [_demo, _demo, _demo]
+                hist_labels = ["Period A", "Period B", "Period C"]
+
+            steps.append(ToolCall(
+                tool="decompose_seasonality",
+                params={"data": cac_data[-min(90, n):], "period": 7},
+            ))
+            steps.append(ToolCall(
+                tool="detect_anomaly_zscore",
+                params={"data": cac_data, "threshold": 1.5},
+            ))
+            steps.append(ToolCall(
+                tool="find_historical_analog",
+                params={
+                    "current_vector": current_win,
+                    "historical_vectors": hist_vecs,
+                    "historical_periods": hist_labels,
+                },
+            ))
         elif playbook_id == "channel_comparison":
+            half = max(len(mql_data) // 2, 1)
             steps.append(ToolCall(tool="compare_distributions_ks", params={
-                "sample1": [10, 12, 11, 13, 12],
-                "sample2": [8, 9, 10, 9, 8]
+                "sample1": mql_data[:half],
+                "sample2": mql_data[half:],
             }))
         else:
-            steps.append(ToolCall(tool="detect_anomaly_zscore", params={"data": [10, 11, 12, 13]}))
+            steps.append(ToolCall(
+                tool="detect_anomaly_zscore",
+                params={"data": cac_data[-30:] or _demo},
+            ))
 
         return ExecutionPlan(steps=steps)
 

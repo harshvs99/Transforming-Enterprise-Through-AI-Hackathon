@@ -69,6 +69,15 @@ class ToolExecution(Base):
     triggered_at = Column(DateTime, default=datetime.datetime.utcnow)
     error = Column(Text)
 
+class ConnectorState(Base):
+    __tablename__ = "connector_states"
+    id           = Column(String, primary_key=True)  # connector_id
+    configured   = Column(Boolean, default=False)
+    status       = Column(String, default="disconnected")
+    last_sync    = Column(DateTime, nullable=True)
+    record_count = Column(Integer, default=0)
+    updated_at   = Column(DateTime, default=datetime.datetime.utcnow)
+
 class Query(Base):
     __tablename__ = "queries"
     id = Column(Integer, primary_key=True, index=True)

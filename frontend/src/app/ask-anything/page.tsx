@@ -282,6 +282,30 @@ function PlaceholderState({ onSuggest }: { onSuggest: (q: string) => void }) {
   );
 }
 
+// ---------- localStorage helpers ----------
+
+const TURNS_KEY = "ask_anything_turns_v2";
+const MAX_PERSISTED_TURNS = 8;
+
+function loadTurns(): ConversationTurn[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(TURNS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<any>;
+    return parsed.map((t) => ({ ...t, timestamp: new Date(t.timestamp) }));
+  } catch {
+    return [];
+  }
+}
+
+function saveTurns(turns: ConversationTurn[]): void {
+  try {
+    const slice = turns.slice(-MAX_PERSISTED_TURNS);
+    localStorage.setItem(TURNS_KEY, JSON.stringify(slice));
+  } catch {}
+}
+
 // ---------- main page ----------
 
 export default function AskAnythingPage() {
@@ -291,6 +315,12 @@ export default function AskAnythingPage() {
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Restore turns from localStorage on mount
+  useEffect(() => {
+    const saved = loadTurns();
+    if (saved.length > 0) setTurns(saved);
+  }, []);
 
   const submitQuery = async (q: string) => {
     if (!q.trim() || loading) return;
@@ -373,6 +403,11 @@ export default function AskAnythingPage() {
     }
   };
 
+  // Persist turns to localStorage whenever they change
+  useEffect(() => {
+    if (turns.length > 0) saveTurns(turns);
+  }, [turns]);
+
   // Auto-submit ?q= param on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -414,7 +449,7 @@ export default function AskAnythingPage() {
           </div>
           {turns.length > 0 && (
             <button
-              onClick={() => { setTurns([]); setError(null); setQuery(""); }}
+              onClick={() => { setTurns([]); setError(null); setQuery(""); localStorage.removeItem(TURNS_KEY); }}
               className="font-headline font-bold text-xs uppercase border-2 border-primary px-3 py-2 bg-surface hover:bg-primary hover:text-white transition-colors"
             >
               New Session

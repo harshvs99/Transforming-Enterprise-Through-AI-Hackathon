@@ -102,8 +102,6 @@ export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState("30d");
   const [sourceMode, setSourceMode] = useState<"sourced" | "influenced">("sourced");
   const [activeStage, setActiveStage] = useState<string | null>(null);
-  const [counters, setCounters] = useState<Record<string, number>>({});
-
   const fetchFunnel = useCallback(() => {
     setLoading(true);
     fetch(apiUrl(`/api/funnel?time_range=${timeRange}`))
@@ -113,11 +111,6 @@ export default function DashboardPage() {
       })
       .then((data: FunnelData) => {
         setFunnel(data);
-        const init: Record<string, number> = {};
-        data.stages.forEach((s) => {
-          init[s.name] = s.count;
-        });
-        setCounters(init);
         setError(null);
       })
       .catch((e) => setError(e.message))
@@ -126,32 +119,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchFunnel();
+    // Auto-refresh every 90 seconds so the dashboard stays current
+    const id = setInterval(fetchFunnel, 90_000);
+    return () => clearInterval(id);
   }, [fetchFunnel]);
 
-  // SSE live updates
-  useEffect(() => {
-    if (typeof EventSource === "undefined") return;
-    const es = new EventSource(apiUrl("/api/funnel/stream"));
-    es.onmessage = (e) => {
-      try {
-        const delta: Record<string, number> = JSON.parse(e.data);
-        setCounters((prev) => {
-          const next = { ...prev };
-          Object.entries(delta).forEach(([k, v]) => {
-            if (k in next) next[k] = (next[k] ?? 0) + v;
-          });
-          return next;
-        });
-      } catch {
-        /* ignore */
-      }
-    };
-    es.onerror = () => es.close();
-    return () => es.close();
-  }, []);
-
   const stages = funnel?.stages ?? [];
-  const maxCount = Math.max(...stages.map((s) => counters[s.name] ?? s.count), 1);
+  const maxCount = Math.max(...stages.map((s) => s.count), 1);
   const anomalies = stages.filter((s) => s.anomaly);
 
   return (
@@ -334,7 +308,7 @@ export default function DashboardPage() {
             ) : (
               <div className="flex flex-col gap-2">
                 {stages.map((stage, idx) => {
-                  const count = counters[stage.name] ?? stage.count;
+                  const count = stage.count;
                   const pct = Math.max((count / maxCount) * 100, 4);
                   const color = STAGE_COLORS[idx % STAGE_COLORS.length];
                   const txtCol = STAGE_TEXT[idx % STAGE_TEXT.length];
@@ -344,7 +318,7 @@ export default function DashboardPage() {
                   let convRate: string | null = null;
                   if (idx > 0) {
                     const prevStage = stages[idx - 1];
-                    const prevCount = counters[prevStage.name] ?? prevStage.count;
+                    const prevCount = prevStage.count;
                     if (prevCount) {
                       convRate = `${((count / prevCount) * 100).toFixed(0)}%`;
                     }
@@ -429,7 +403,7 @@ export default function DashboardPage() {
               const stage = funnel.stages.find((s) => s.name === activeStage);
               if (!stage) return null;
               const delta =
-                (counters[stage.name] ?? stage.count) - stage.previous_count;
+                (stage.count) - stage.previous_count;
               return (
                 <div className="mt-6 border-4 border-primary bg-surface-variant p-5">
                   <div className="flex items-center justify-between mb-4">
@@ -447,7 +421,7 @@ export default function DashboardPage() {
                     {[
                       {
                         label: "Current",
-                        val: (counters[stage.name] ?? stage.count).toLocaleString(),
+                        val: (stage.count).toLocaleString(),
                       },
                       {
                         label: "Previous",

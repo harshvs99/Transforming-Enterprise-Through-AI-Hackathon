@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { runInitialize } from "@/lib/apiCache";
 import Link from "next/link";
 
@@ -9,6 +9,16 @@ interface SetupStep {
   title: string;
   status: "ok" | "warning" | "error" | "pending";
   detail: string;
+}
+
+const INIT_CACHE_KEY = "initialize_brain_v1";
+
+function loadCache(): { steps: SetupStep[]; allOk: boolean; devMode: boolean; ranAt: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(INIT_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 }
 
 const STATUS_CONFIG: Record<string, { icon: string; cls: string; bg: string }> = {
@@ -32,6 +42,22 @@ export default function InitializeBrainPage() {
   const [allOk, setAllOk]     = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [ranAt, setRanAt]     = useState<string | null>(null);
+
+  // Restore last result from localStorage; auto-run if no cache
+  useEffect(() => {
+    const cached = loadCache();
+    if (cached) {
+      setSteps(cached.steps);
+      setAllOk(cached.allOk);
+      setDevMode(cached.devMode);
+      setDone(true);
+      setRanAt(cached.ranAt);
+    } else {
+      handleRun();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRun = async () => {
     setRunning(true);
@@ -50,6 +76,13 @@ export default function InitializeBrainPage() {
       setAllOk(result.all_ok);
       setDevMode(result.dev_mode ?? false);
       setDone(true);
+      const ts = new Date().toISOString();
+      setRanAt(ts);
+      try {
+        localStorage.setItem(INIT_CACHE_KEY, JSON.stringify({
+          steps: result.steps, allOk: result.all_ok, devMode: result.dev_mode ?? false, ranAt: ts,
+        }));
+      } catch {}
     } catch {
       setError("Could not reach backend. Ensure uvicorn is running.");
     } finally {
@@ -89,6 +122,7 @@ export default function InitializeBrainPage() {
                 </p>
                 <p className="font-mono text-xs text-on-surface-variant mt-0.5">
                   {completedCount}/{steps.length} checks passed{devMode ? " · DEV mode active" : ""}
+                  {ranAt && ` · Last checked ${new Date(ranAt).toLocaleTimeString()}`}
                 </p>
               </div>
             </div>

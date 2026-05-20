@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { fetchHealth } from "@/lib/apiCache";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "grid_view" },
@@ -20,6 +22,22 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [llmStatus, setLlmStatus] = useState<{ enabled: boolean; model: string } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const poll = async () => {
+      try {
+        const h = await fetchHealth();
+        if (alive) setLlmStatus({ enabled: h.llm_enabled, model: h.model });
+      } catch {
+        if (alive) setLlmStatus({ enabled: false, model: "unreachable" });
+      }
+    };
+    poll();
+    const id = setInterval(poll, 15_000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/" && pathname === "/") return true;
@@ -63,9 +81,34 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto pt-4 border-t-2 border-primary px-4 py-4 text-[10px] font-mono uppercase text-on-surface-variant tracking-widest">
-        <p>© 2026</p>
-        <p>Thinking Machines</p>
+      <div className="mt-auto pt-4 border-t-2 border-primary px-4 py-4 space-y-3">
+        {/* LLM status light */}
+        <div className="flex items-center gap-2">
+          {llmStatus === null ? (
+            <span className="w-2.5 h-2.5 rounded-full bg-on-surface-variant animate-pulse flex-shrink-0" />
+          ) : llmStatus.enabled ? (
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_6px_2px_rgba(34,197,94,0.5)] flex-shrink-0" />
+          ) : (
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
+          )}
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase text-on-surface-variant tracking-widest leading-tight">
+              {llmStatus === null
+                ? "Checking LLM…"
+                : llmStatus.enabled
+                  ? "LLM Active"
+                  : "Deterministic Mode"}
+            </p>
+            {llmStatus && (
+              <p className="font-mono text-[8px] text-on-surface-variant opacity-60 truncate">
+                {llmStatus.model}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="text-[10px] font-mono uppercase text-on-surface-variant tracking-widest">
+          <p>© 2026 Thinking Machines</p>
+        </div>
       </div>
     </aside>
   );
