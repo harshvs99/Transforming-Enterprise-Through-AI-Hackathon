@@ -199,6 +199,24 @@ export async function fetchHealth(): Promise<{ ok: boolean; llm_enabled: boolean
   return res.json();
 }
 
+/** Get current dev mode */
+export async function fetchDevMode(): Promise<{ dev_mode: boolean }> {
+  const res = await fetch(apiUrl('/api/dev-mode'));
+  if (!res.ok) throw new Error('Failed to fetch dev mode');
+  return res.json();
+}
+
+/** Toggle dev/prod mode */
+export async function setDevMode(enabled: boolean): Promise<{ dev_mode: boolean }> {
+  const res = await fetch(apiUrl('/api/dev-mode'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) throw new Error('Failed to set dev mode');
+  return res.json();
+}
+
 /**
  * Drill into a specific investigation hypothesis using live DB data
  */

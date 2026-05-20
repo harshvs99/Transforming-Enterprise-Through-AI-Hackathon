@@ -728,6 +728,26 @@ def pipeline_status():
 
 
 # ---------------------------------------------------------------------------
+# Dev / Prod mode toggle
+# ---------------------------------------------------------------------------
+
+class DevModeRequest(BaseModel):
+    enabled: bool
+
+@app.get("/dev-mode")
+def get_dev_mode():
+    return {"dev_mode": DEV_MODE}
+
+@app.post("/dev-mode")
+async def set_dev_mode(body: DevModeRequest):
+    global DEV_MODE
+    DEV_MODE = body.enabled
+    label = "DEV" if DEV_MODE else "PROD"
+    _log("System", f"Mode switched to {label} — connectors {'use simulated data' if DEV_MODE else 'require real credentials'}", "success")
+    return {"dev_mode": DEV_MODE}
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 

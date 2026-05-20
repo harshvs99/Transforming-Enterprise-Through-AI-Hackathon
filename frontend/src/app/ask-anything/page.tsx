@@ -437,9 +437,9 @@ export default function AskAnythingPage() {
   };
 
   return (
-    <div className="bg-background min-h-screen flex flex-col">
+    <div className="bg-background h-full flex flex-col">
       {/* Header */}
-      <header className="bg-background border-b-4 border-primary px-6 lg:px-10 py-4 sticky top-0 z-40">
+      <header className="bg-background border-b-4 border-primary px-6 lg:px-10 py-4 shrink-0 z-40">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-headline font-black text-2xl uppercase tracking-tighter text-primary">Ask Anything</h1>
@@ -459,7 +459,7 @@ export default function AskAnythingPage() {
       </header>
 
       {/* Conversation thread */}
-      <div className="flex-1 overflow-y-auto p-6 lg:p-10 pb-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-6 lg:p-10 pb-4">
         <div className="max-w-4xl mx-auto space-y-8">
           {turns.length === 0 && !loading && !error && (
             <PlaceholderState onSuggest={(q) => { setQuery(q); textareaRef.current?.focus(); }} />
@@ -495,8 +495,8 @@ export default function AskAnythingPage() {
         </div>
       </div>
 
-      {/* Sticky input area */}
-      <div className="border-t-4 border-primary bg-surface px-6 lg:px-10 pt-4 pb-6">
+      {/* Input area — anchored to bottom of bounded container */}
+      <div className="border-t-4 border-primary bg-surface px-6 lg:px-10 pt-4 pb-6 shrink-0">
         <div className="max-w-4xl mx-auto space-y-3">
           {/* Suggestion chips — shown only after first turn */}
           {turns.length > 0 && turns[turns.length - 1]?.response?.investigation_mode && (
