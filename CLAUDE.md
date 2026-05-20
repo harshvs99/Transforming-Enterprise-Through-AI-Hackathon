@@ -51,7 +51,7 @@ The request flows through a fixed pipeline, instantiated fresh per request:
 This is a demo. Several stages are mocked and **not** wired to real data even though plumbing exists:
 - `PlanCompiler` passes **hardcoded literal arrays** as tool params; it does not query `Entity`/`MetricSnapshot`.
 - `InvestigationMode` `sleep(1)` then returns fixed hypotheses; `TierClassifier` is pure keyword matching.
-- `google-generativeai` / `python-dotenv` are in `requirements.txt` and the response reports `model: "gemini-2.0-flash"`, but **no LLM is actually called** anywhere.
+- `google-generativeai` / `python-dotenv` are in `requirements.txt`. The `Decompiler` and `InvestigationMode` **do call Gemini** via `backend/app/services/llm.py` when `GEMINI_API_KEY` is set (loaded from `.env` locally, or from Cloud Run environment variables in production). When the key is absent the backend falls back to the deterministic heuristic transparently. Check `GET /health` → `llm_enabled` to confirm.
 - `/query` does not persist a `Query` row despite the `Query` model and `triggered_by_query_id` fields existing.
 
 When extending, prefer wiring these to real DB data over adding new mocks, unless asked otherwise.
