@@ -19,21 +19,33 @@ _FALLBACK = InvestigationResult(
     hypotheses=[
         InvestigationHypothesis(
             id="h1",
-            title="Creative Fatigue in LinkedIn Segment",
-            description="The anomaly might be caused by high frequency in the Enterprise audience segment.",
+            title="Channel Mix Shift",
+            description="A shift toward higher-cost acquisition channels (e.g. paid search vs organic) "
+                        "can inflate blended CAC without any single channel worsening.",
             requires_new_tool=False,
         ),
         InvestigationHypothesis(
             id="h2",
-            title="Attribution Delay Effect",
-            description="October spikes sometimes correlate with delayed reporting from CRM webhooks.",
+            title="Conversion Rate Degradation",
+            description="If top-of-funnel volume held steady but closed-won declined, cost per "
+                        "acquisition rises. Requires segmenting CAC by funnel stage.",
+            requires_new_tool=False,
+        ),
+        InvestigationHypothesis(
+            id="h3",
+            title="Seasonality / Campaign Burst",
+            description="Q4 campaign bursts often front-load spend before deals close, temporarily "
+                        "inflating in-period CAC. A new tool to align spend to closed-date would "
+                        "confirm this.",
             requires_new_tool=True,
-            proposed_tool_name="detect_webhook_latency",
+            proposed_tool_name="align_spend_to_close_date",
         ),
     ],
     findings=(
-        "Investigation revealed two primary hypotheses. One can be verified with existing tools, "
-        "while the second requires a new deterministic tool to measure webhook latency."
+        "Three hypotheses identified for the CAC movement: a channel mix shift toward costlier "
+        "acquisition channels, a conversion rate degradation in the funnel, or a seasonal spend "
+        "burst where costs are booked before deals close. The first two can be verified with "
+        "existing distribution and anomaly tools."
     ),
 )
 

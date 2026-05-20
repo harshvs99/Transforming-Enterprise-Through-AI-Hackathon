@@ -22,8 +22,13 @@ class TierClassifier:
             )
 
         # Tier 2 (Analysis): "Why", Comparisons, Root cause
-        if any(word in q for word in ["why", "compare", "vs", "difference", "drop", "spike", "change"]):
-            playbook = "metric_anomaly_diagnosis" if any(word in q for word in ["why", "drop", "spike"]) else "channel_comparison"
+        _anomaly_words = ["why", "drop", "dropping", "dropped", "spike", "spiking", "spiked",
+                          "increase", "increased", "increasing", "decrease", "decreased", "decreasing",
+                          "rise", "rising", "rose", "fell", "fall", "falling", "decline", "declining"]
+        _analysis_words = _anomaly_words + ["compare", "vs", "difference", "change", "changed",
+                                             "where", "which", "segment", "channel", "breakdown"]
+        if any(word in q for word in _analysis_words):
+            playbook = "metric_anomaly_diagnosis" if any(word in q for word in _anomaly_words) else "channel_comparison"
             return TierResult(
                 tier=2,
                 confidence=0.92,

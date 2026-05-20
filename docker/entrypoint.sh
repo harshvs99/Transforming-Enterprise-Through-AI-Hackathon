@@ -56,15 +56,22 @@ echo "Starting FastAPI backend on port $BACKEND_PORT..."
 uvicorn backend.app.main:app --host 0.0.0.0 --port $BACKEND_PORT &
 UVICORN_PID=$!
 
-# Wait until uvicorn is healthy before opening nginx (and therefore port $PORT).
+# Wait until both upstream services are ready before opening nginx (port $PORT).
 # Cloud Run's startup probe targets port $PORT — delaying nginx here means the
-# probe cannot succeed until the backend is actually ready, eliminating the
-# cold-start 502 race condition.
+# probe cannot succeed until both upstreams are ready, eliminating cold-start 502s.
 echo "Waiting for backend to be ready..."
 until curl -sf http://localhost:$BACKEND_PORT/health > /dev/null 2>&1; do
+  kill -0 $UVICORN_PID 2>/dev/null || { echo "uvicorn process died — aborting"; exit 1; }
   sleep 0.5
 done
 echo "✓ Backend ready"
+
+echo "Waiting for Next.js to be ready..."
+until curl -sf http://localhost:$NEXT_PORT > /dev/null 2>&1; do
+  kill -0 $NEXT_PID 2>/dev/null || { echo "Next.js process died — aborting"; exit 1; }
+  sleep 0.5
+done
+echo "✓ Next.js ready"
 
 # Generate nginx config and start — port $PORT opens HERE
 echo "Generating nginx config for port $PORT..."
@@ -79,9 +86,19 @@ nginx -g "daemon off;" &
 NGINX_PID=$!
 echo "✓ Nginx started (PID: $NGINX_PID)"
 
-# Keep the container alive; exit with uvicorn's code if it crashes so Cloud Run restarts
-wait $UVICORN_PID
-exit_code=$?
-echo "uvicorn exited with code $exit_code — shutting down"
-kill $NGINX_PID $NEXT_PID 2>/dev/null
-exit $exit_code
+# Monitor both services. If either exits, kill everything so Cloud Run restarts the container.
+# Watching only uvicorn (the old approach) meant a crashed Next.js would leave the container
+# alive but serving permanent 502s on all frontend routes.
+while true; do
+  if ! kill -0 $UVICORN_PID 2>/dev/null; then
+    echo "uvicorn exited — shutting down container"
+    kill $NGINX_PID $NEXT_PID 2>/dev/null
+    exit 1
+  fi
+  if ! kill -0 $NEXT_PID 2>/dev/null; then
+    echo "Next.js exited — shutting down container"
+    kill $NGINX_PID $UVICORN_PID 2>/dev/null
+    exit 1
+  fi
+  sleep 5
+done

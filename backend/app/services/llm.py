@@ -52,7 +52,7 @@ def generate(prompt: str, model: str = DEFAULT_MODEL, temperature: float = 0.2) 
         m = client.GenerativeModel(model)
         resp = m.generate_content(
             prompt,
-            generation_config={"temperature": temperature, "max_output_tokens": 800},
+            generation_config={"temperature": temperature, "max_output_tokens": 2048},
         )
         return (resp.text or "").strip() or None
     except Exception as e:
