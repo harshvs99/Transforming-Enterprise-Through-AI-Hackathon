@@ -18,9 +18,12 @@ from pydantic import BaseModel
 
 app = FastAPI(title="Thinking Machines API")
 
+# Use environment variable for allowed origins, defaulting to localhost for dev
+allowed_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
