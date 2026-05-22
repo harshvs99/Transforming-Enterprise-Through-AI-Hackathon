@@ -62,6 +62,7 @@ export default function Sidebar() {
         href="/ask-anything"
         className="w-full bg-primary-fixed text-on-primary-fixed border-4 border-primary neo-shadow px-2 lg:px-4 py-3 font-label font-bold uppercase text-xs tracking-widest mb-4 lg:mb-6 transition-all duration-300 ease-out hover:translate-x-1 hover:translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary flex items-center justify-center lg:justify-start gap-2"
         title="New Analysis"
+        aria-label="New Analysis"
       >
         <span className="material-symbols-outlined text-lg shrink-0">add</span>
         <span className="hidden lg:inline">New Analysis</span>
@@ -75,6 +76,8 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
               className={`px-2 lg:px-4 py-3 flex items-center justify-center lg:justify-start gap-3 border-2 font-label font-bold uppercase text-xs tracking-widest transition-all duration-300 ease-out focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary ${
                 active
                   ? "bg-primary-fixed text-on-primary-fixed border-primary neo-shadow"
@@ -91,7 +94,17 @@ export default function Sidebar() {
 
       <div className="mt-auto pt-4 border-t-2 border-primary px-1 lg:px-4 py-4 space-y-3">
         {/* LLM status indicator */}
-        <div className="flex items-center justify-center lg:justify-start gap-2">
+        <div
+          className="flex items-center justify-center lg:justify-start gap-2"
+          role="status"
+          aria-label={
+            llmStatus === null
+              ? "Checking LLM status"
+              : llmStatus.enabled
+                ? `LLM Active: ${llmStatus.model}`
+                : "Deterministic Mode"
+          }
+        >
           {llmStatus === null ? (
             <span className="w-2.5 h-2.5 rounded-full bg-on-surface-variant animate-pulse flex-shrink-0" />
           ) : llmStatus.enabled ? (
