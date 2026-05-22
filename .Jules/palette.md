@@ -1,0 +1,3 @@
+## 2025-05-22 - [Sidebar Accessibility Improvements]
+**Learning:** Adding `aria-current="page"` and `aria-label` to navigation links is essential for sidebars that use icon-only states in mobile or collapsed views. Furthermore, wrapping dynamic status indicators (like LLM status) in a `role="status"` container with a descriptive `aria-label` ensures that system state changes are accessible to screen reader users who cannot see the visual pulse or color changes.
+**Action:** Always include ARIA labels for icon-heavy navigation and use semantic status roles for real-time system indicators in future UX tasks.
