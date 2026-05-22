@@ -14,13 +14,17 @@ from .compiler.tier_classifier import TierClassifier
 from .compiler.compiler import PlanCompiler, Decompiler, ToolCall
 from .compiler.investigation import InvestigationMode
 from .tools import registry
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="Thinking Machines API")
 
+# Security: Avoid wildcard CORS in production. Use environment variable for allowed origins.
+_allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+ALLOWED_ORIGINS = [origin.strip() for origin in _allowed_origins_raw.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -316,13 +320,15 @@ def _get_simulated_data(connector_id: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 class QueryRequest(BaseModel):
-    question: str
+    # Security: Limit input length to prevent DoS via oversized payloads
+    question: str = Field(..., max_length=1000)
 
 class InvestigateRequest(BaseModel):
-    hypothesis_id: str
-    hypothesis_title: str
-    hypothesis_description: str
-    original_question: str
+    # Security: Limit input lengths to prevent DoS via oversized payloads
+    hypothesis_id: str = Field(..., max_length=100)
+    hypothesis_title: str = Field(..., max_length=200)
+    hypothesis_description: str = Field(..., max_length=2000)
+    original_question: str = Field(..., max_length=1000)
 
 class ConnectorConfigRequest(BaseModel):
     config: Dict[str, Any]
