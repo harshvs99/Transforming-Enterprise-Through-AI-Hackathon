@@ -53,17 +53,18 @@ export default function Sidebar() {
         </h1>
         <p className="font-mono text-xs text-on-surface-variant mt-1">Enterprise Analytics v2.5</p>
       </div>
-      <div className="lg:hidden flex justify-center mb-4 mt-3">
+      <div className="lg:hidden flex justify-center mb-4 mt-3" aria-hidden="true">
         <span className="material-symbols-outlined text-primary text-2xl">psychology</span>
       </div>
 
       {/* New Analysis — full on desktop, icon-only on mobile */}
       <Link
         href="/ask-anything"
+        aria-label="New Analysis"
         className="w-full bg-primary-fixed text-on-primary-fixed border-4 border-primary neo-shadow px-2 lg:px-4 py-3 font-label font-bold uppercase text-xs tracking-widest mb-4 lg:mb-6 transition-all duration-300 ease-out hover:translate-x-1 hover:translate-y-1 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary flex items-center justify-center lg:justify-start gap-2"
         title="New Analysis"
       >
-        <span className="material-symbols-outlined text-lg shrink-0">add</span>
+        <span className="material-symbols-outlined text-lg shrink-0" aria-hidden="true">add</span>
         <span className="hidden lg:inline">New Analysis</span>
       </Link>
 
@@ -75,15 +76,17 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
               className={`px-2 lg:px-4 py-3 flex items-center justify-center lg:justify-start gap-3 border-2 font-label font-bold uppercase text-xs tracking-widest transition-all duration-300 ease-out focus-visible:outline-2 focus-visible:outline-dashed focus-visible:outline-primary ${
                 active
                   ? "bg-primary-fixed text-on-primary-fixed border-primary neo-shadow"
                   : "text-primary border-transparent hover:border-primary hover:bg-surface-container-high lg:hover:translate-x-1"
               }`}
             >
-              <span className="material-symbols-outlined text-lg shrink-0">{item.icon}</span>
+              <span className="material-symbols-outlined text-lg shrink-0" aria-hidden="true">{item.icon}</span>
               <span className="hidden lg:inline">{item.label}</span>
-              {active && <span className="material-symbols-outlined text-lg ml-auto hidden lg:block">check</span>}
+              {active && <span className="material-symbols-outlined text-lg ml-auto hidden lg:block" aria-hidden="true">check</span>}
             </Link>
           );
         })}
@@ -91,7 +94,17 @@ export default function Sidebar() {
 
       <div className="mt-auto pt-4 border-t-2 border-primary px-1 lg:px-4 py-4 space-y-3">
         {/* LLM status indicator */}
-        <div className="flex items-center justify-center lg:justify-start gap-2">
+        <div
+          className="flex items-center justify-center lg:justify-start gap-2"
+          role="status"
+          aria-label={
+            llmStatus === null
+              ? "Checking LLM status"
+              : llmStatus.enabled
+                ? `LLM Active: ${llmStatus.model}`
+                : "Deterministic Mode Active"
+          }
+        >
           {llmStatus === null ? (
             <span className="w-2.5 h-2.5 rounded-full bg-on-surface-variant animate-pulse flex-shrink-0" />
           ) : llmStatus.enabled ? (
@@ -99,7 +112,7 @@ export default function Sidebar() {
           ) : (
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
           )}
-          <div className="hidden lg:block min-w-0">
+          <div className="hidden lg:block min-w-0" aria-hidden="true">
             <p className="font-mono text-[9px] uppercase text-on-surface-variant tracking-widest leading-tight">
               {llmStatus === null
                 ? "Checking LLM…"
