@@ -14,13 +14,20 @@ from .compiler.tier_classifier import TierClassifier
 from .compiler.compiler import PlanCompiler, Decompiler, ToolCall
 from .compiler.investigation import InvestigationMode
 from .tools import registry
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="Thinking Machines API")
 
+# Environment-aware CORS: default to localhost:3000 for development
+_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -316,13 +323,13 @@ def _get_simulated_data(connector_id: str) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., max_length=500)
 
 class InvestigateRequest(BaseModel):
     hypothesis_id: str
-    hypothesis_title: str
-    hypothesis_description: str
-    original_question: str
+    hypothesis_title: str = Field(..., max_length=100)
+    hypothesis_description: str = Field(..., max_length=500)
+    original_question: str = Field(..., max_length=500)
 
 class ConnectorConfigRequest(BaseModel):
     config: Dict[str, Any]
