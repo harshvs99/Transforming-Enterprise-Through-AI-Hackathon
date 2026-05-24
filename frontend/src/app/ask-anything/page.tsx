@@ -450,6 +450,7 @@ export default function AskAnythingPage() {
           {turns.length > 0 && (
             <button
               onClick={() => { setTurns([]); setError(null); setQuery(""); localStorage.removeItem(TURNS_KEY); }}
+              aria-label="Start a new session"
               className="font-headline font-bold text-xs uppercase border-2 border-primary px-3 py-2 bg-surface hover:bg-primary hover:text-white transition-colors"
             >
               New Session
@@ -522,7 +523,9 @@ export default function AskAnythingPage() {
             onSubmit={(e) => { e.preventDefault(); submitQuery(query); }}
             className="flex gap-3 items-end"
           >
+            <label htmlFor="query-input" className="sr-only">Query enterprise data</label>
             <textarea
+              id="query-input"
               ref={textareaRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
